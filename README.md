@@ -1,12 +1,14 @@
 # V8 CRM — Design System
 
-The visual foundation for V8's CRM: a dark, dense, financial-grade console for
-running the book of engagements V8 delivers for operators in behavioral health,
-nonprofits, and field operations.
+V8's CRM: a dark, dense, financial-grade console for running the book of
+engagements V8 delivers for operators in behavioral health, nonprofits, and
+field operations.
 
-This first cut is the **design language**, not the app — the tokens, the
-primitives, and a living style guide that proves them. Screens get built on top
-of it next.
+It's built on a token-driven design system — every color, size, and motion
+value lives in one place — with real application screens on top: an **Overview**
+home, an **Accounts** workspace, and a living **Design System** style guide that
+documents the language. Additional destinations (Pipeline, Activity, Reports)
+are stubbed with honest empty states.
 
 ## What informs the look
 
@@ -32,8 +34,10 @@ showcase is a documentation layout of its own.
 | Tokens | `src/styles/tokens.css` | Single source of truth — every color, size, duration as a CSS variable. Retheme here. |
 | Bridge | `tailwind.config.js` | Maps tokens to Tailwind utilities + motion keyframes. No off-system values allowed. |
 | Base | `src/index.css` | Resets, the `.eyebrow` / `.panel` / `.tabular` helpers, focus + scrollbar styling. |
-| Primitives | `src/components/*` | `Button`, `Badge`, `TrendPill`, `SegmentedControl`, `Toggle`, `StatCard`, `Sparkline`, `AccountsTable`. |
-| Showcase | `src/App.tsx` | The living style guide. |
+| Primitives | `src/components/*` | `Button`, `Badge`, `TrendPill`, `SegmentedControl`, `Toggle`, `StatCard`, `Sparkline`, `AccountsTable`, `Sidebar`, `Topbar`. |
+| Shell | `src/app/AppShell.tsx` | Sidebar + scrolling main; routes render inside it. |
+| Screens | `src/screens/*` | `Overview`, `AccountsScreen`, `StyleGuide`, `Placeholder`. |
+| Router | `src/App.tsx` | Routes: `/` Overview, `/accounts`, `/styleguide`, stubs for the rest. |
 
 **The rule:** components never hard-code a color, size, radius, or duration.
 They read token utilities only, so restyling the whole CRM means editing
@@ -43,11 +47,17 @@ They read token utilities only, so restyling the whole CRM means editing
 
 ```bash
 npm install
-npm run dev      # style guide at the printed localhost URL
+npm run dev      # console at the printed localhost URL (Overview is home)
 npm run build    # type-check + production build
 ```
 
+## Deploy
+
+Configured for Vercel (`vercel.json`): framework preset `vite`, output `dist`,
+with an SPA rewrite so client-side routes resolve on refresh. Vercel builds from
+whatever branch is set as the project's Production Branch — point that at `main`.
+
 ## Stack
 
-Vite · React 18 · TypeScript · Tailwind 3 (wired to CSS custom properties) ·
-Inter (variable).
+Vite · React 18 · TypeScript · React Router 6 · Tailwind 3 (wired to CSS custom
+properties) · Inter (variable).

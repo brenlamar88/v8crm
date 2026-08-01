@@ -26,13 +26,21 @@ function healthTone(h: number): "up" | "warn" | "down" {
   return "down";
 }
 
-export function AccountsTable({ accounts }: { accounts: Account[] }) {
+export function AccountsTable({
+  accounts,
+  title = "Accounts",
+  subtitle = "Active engagements & pipeline",
+}: {
+  accounts: Account[];
+  title?: string;
+  subtitle?: string;
+}) {
   return (
     <div className="panel overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 border-b border-[color:var(--v8-border)]">
         <div>
-          <h3 className="text-h3 font-semibold">Accounts</h3>
-          <p className="text-body-sm text-text-muted">Active engagements & pipeline</p>
+          <h3 className="text-h3 font-semibold">{title}</h3>
+          <p className="text-body-sm text-text-muted">{subtitle}</p>
         </div>
         <Badge tone="accent" dot={false}>
           {accounts.length} total
