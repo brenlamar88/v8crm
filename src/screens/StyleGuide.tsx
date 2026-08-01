@@ -5,6 +5,8 @@
 import { useState, type ReactNode } from "react";
 import { Topbar } from "../components/Topbar.tsx";
 import { Button, Badge, SegmentedControl, Toggle } from "../components/primitives.tsx";
+import { Field, Input, Select, Textarea } from "../components/forms.tsx";
+import { Modal } from "../components/Modal.tsx";
 import { StatCard, StatCardRow } from "../components/StatCard.tsx";
 import { Sparkline } from "../components/Sparkline.tsx";
 import { AccountsTable } from "../components/AccountsTable.tsx";
@@ -74,6 +76,7 @@ function SpaceRow({ token, px }: { token: string; px: number }) {
 
 export function StyleGuide() {
   const [range, setRange] = useState("1D");
+  const [demoOpen, setDemoOpen] = useState(false);
 
   return (
     <>
@@ -214,11 +217,61 @@ export function StyleGuide() {
             </div>
           </Section>
 
-          <Section n="06" title="In context" desc="The primitives assembled into a real CRM surface — the accounts table V8 uses to run its book of engagements.">
+          <Section n="06" title="Forms & overlays" desc="The input layer: one field frame that shifts to the accent on focus, and a dialog that fades in over a dimmed canvas.">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="panel flex flex-col gap-4 p-6">
+                <span className="eyebrow">Fields</span>
+                <Field label="Account name">
+                  <Input placeholder="e.g. Vermilion Health Group" />
+                </Field>
+                <Field label="Stage">
+                  <Select defaultValue="Discovery">
+                    <option>Discovery</option>
+                    <option>Proposal</option>
+                    <option>Build</option>
+                    <option>Retainer</option>
+                  </Select>
+                </Field>
+                <Field label="Notes" hint="Supports multiple lines.">
+                  <Textarea placeholder="Context for the engagement…" />
+                </Field>
+              </div>
+              <div className="panel flex flex-col items-start gap-4 p-6">
+                <span className="eyebrow">Dialog</span>
+                <p className="text-body text-text-secondary">
+                  Overlays dim and blur the canvas, close on Escape or backdrop click, and
+                  lock body scroll while open.
+                </p>
+                <Button variant="primary" onClick={() => setDemoOpen(true)}>
+                  Open dialog
+                </Button>
+              </div>
+            </div>
+          </Section>
+
+          <Section n="07" title="In context" desc="The primitives assembled into a real CRM surface — the accounts table V8 uses to run its book of engagements.">
             <AccountsTable accounts={accounts} />
           </Section>
         </div>
       </div>
+
+      <Modal
+        open={demoOpen}
+        onClose={() => setDemoOpen(false)}
+        title="Dialog"
+        description="A token-driven overlay, same as the console's forms."
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setDemoOpen(false)}>Cancel</Button>
+            <Button variant="primary" onClick={() => setDemoOpen(false)}>Done</Button>
+          </>
+        }
+      >
+        <p className="text-body text-text-secondary">
+          Everything here — spacing, radius, motion, color — comes from the same tokens as
+          the rest of the page. Press Escape or click outside to dismiss.
+        </p>
+      </Modal>
     </>
   );
 }

@@ -8,9 +8,11 @@ import { SegmentedControl } from "../components/primitives.tsx";
 import { StatCard, StatCardRow } from "../components/StatCard.tsx";
 import { Sparkline } from "../components/Sparkline.tsx";
 import { AccountsTable } from "../components/AccountsTable.tsx";
-import { accounts, revenueSeries } from "../data.ts";
+import { useAccounts } from "../store/accounts.tsx";
+import { revenueSeries } from "../data.ts";
 
 export function Overview() {
+  const { accounts, openNewAccount } = useAccounts();
   const [range, setRange] = useState("1M");
   const attention = accounts.filter((a) => a.health < 80).slice(0, 4);
 
@@ -20,6 +22,7 @@ export function Overview() {
         title="Overview"
         subtitle="Tuesday, August 1 · your book at a glance"
         action="New account"
+        onAction={openNewAccount}
       />
       <div className="px-6 py-6">
         <div className="mb-4 flex items-center justify-between">

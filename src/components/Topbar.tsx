@@ -21,10 +21,12 @@ export function Topbar({
   title,
   subtitle,
   action,
+  onAction,
 }: {
   title: string;
   subtitle?: string;
   action?: string;
+  onAction?: () => void;
 }) {
   return (
     <header className="sticky top-0 z-10 flex items-center gap-4 border-b border-[color:var(--v8-border)] bg-base/80 px-6 h-16 backdrop-blur">
@@ -46,7 +48,7 @@ export function Topbar({
           <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-accent-400" />
         </IconButton>
         {action && (
-          <Button variant="primary" icon={<IconPlus width={16} height={16} />}>
+          <Button variant="primary" onClick={onAction} icon={<IconPlus width={16} height={16} />}>
             {action}
           </Button>
         )}

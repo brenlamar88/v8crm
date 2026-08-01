@@ -6,11 +6,12 @@ import { useMemo, useState } from "react";
 import { Topbar } from "../components/Topbar.tsx";
 import { StatCard, StatCardRow } from "../components/StatCard.tsx";
 import { AccountsTable } from "../components/AccountsTable.tsx";
-import { accounts } from "../data.ts";
+import { useAccounts } from "../store/accounts.tsx";
 
 const FILTERS = ["All", "Retainer", "Build", "Proposal", "Discovery", "At Risk"] as const;
 
 export function AccountsScreen() {
+  const { accounts, openNewAccount } = useAccounts();
   const [filter, setFilter] = useState<(typeof FILTERS)[number]>("All");
 
   const rows = useMemo(
@@ -24,7 +25,7 @@ export function AccountsScreen() {
 
   return (
     <>
-      <Topbar title="Accounts" subtitle={`${accounts.length} engagements`} action="New account" />
+      <Topbar title="Accounts" subtitle={`${accounts.length} engagements`} action="New account" onAction={openNewAccount} />
       <div className="px-6 py-6">
         <StatCardRow>
           <StatCard label="Book MRR" value={`$${(mrr / 1000).toFixed(1)}`} unit="K" trend={6.4} range="MTD" series={[30, 31, 33, 34, 35, 34, 35, 36]} delay={0} />

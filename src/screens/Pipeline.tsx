@@ -7,7 +7,8 @@
 import { useNavigate } from "react-router-dom";
 import { Topbar } from "../components/Topbar.tsx";
 import { Sparkline } from "../components/Sparkline.tsx";
-import { accounts, pipelineStages, type Account } from "../data.ts";
+import { useAccounts } from "../store/accounts.tsx";
+import { pipelineStages, type Account } from "../data.ts";
 
 function money(n: number): string {
   return n === 0 ? "—" : "$" + n.toLocaleString("en-US");
@@ -56,11 +57,12 @@ function Card({ a }: { a: Account }) {
 }
 
 export function Pipeline() {
+  const { accounts, openNewAccount } = useAccounts();
   const total = accounts.reduce((s, a) => s + a.mrr, 0);
 
   return (
     <>
-      <Topbar title="Pipeline" subtitle={`${accounts.length} engagements · ${money(total)} in play`} action="New deal" />
+      <Topbar title="Pipeline" subtitle={`${accounts.length} engagements · ${money(total)} in play`} action="New deal" onAction={openNewAccount} />
       <div className="px-6 py-6">
         <div className="flex gap-4 overflow-x-auto pb-4">
           {pipelineStages.map(({ stage, tint }) => {

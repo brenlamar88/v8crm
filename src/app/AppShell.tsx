@@ -5,6 +5,7 @@
    -------------------------------------------------------------------------- */
 import { Outlet } from "react-router-dom";
 import { Sidebar } from "../components/Sidebar.tsx";
+import { NewAccountModal } from "../components/NewAccountModal.tsx";
 
 export function AppShell() {
   return (
@@ -13,6 +14,8 @@ export function AppShell() {
       <main className="flex-1 overflow-y-auto">
         <Outlet />
       </main>
+      {/* Global "New account" dialog, opened by the topbar action anywhere. */}
+      <NewAccountModal />
     </div>
   );
 }

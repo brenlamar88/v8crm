@@ -3,13 +3,17 @@
    + actions, a KPI strip, an engagement chart, the activity timeline, and a
    side rail of account facts and contacts. Reached from any accounts table row.
    -------------------------------------------------------------------------- */
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Topbar } from "../components/Topbar.tsx";
 import { Button, Badge } from "../components/primitives.tsx";
 import { Sparkline } from "../components/Sparkline.tsx";
 import { Timeline } from "../components/Timeline.tsx";
+import { Modal } from "../components/Modal.tsx";
+import { Field, Select, Textarea } from "../components/forms.tsx";
 import { Placeholder } from "./Placeholder.tsx";
-import { accountByCode, type Account, type EngagementStage } from "../data.ts";
+import { useAccounts } from "../store/accounts.tsx";
+import { type Account, type EngagementStage, type TimelineKind } from "../data.ts";
 
 const stageTone: Record<EngagementStage, Parameters<typeof Badge>[0]["tone"]> = {
   Discovery: "neutral",
@@ -44,14 +48,30 @@ function Fact({ label, value }: { label: string; value: string }) {
   );
 }
 
+const ACTIVITY_KINDS: TimelineKind[] = ["note", "call", "email", "ship", "risk"];
+
 export function AccountDetail() {
   const { code = "" } = useParams();
-  const account: Account | undefined = accountByCode(code);
+  const { getAccount, logActivity } = useAccounts();
+  const account: Account | undefined = getAccount(code);
+
+  const [logOpen, setLogOpen] = useState(false);
+  const [kind, setKind] = useState<TimelineKind>("note");
+  const [text, setText] = useState("");
 
   if (!account) {
     return (
       <Placeholder title="Account not found" note={`No engagement matches ${code}.`} />
     );
+  }
+
+  function saveActivity() {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    logActivity(code, { when: "just now", kind, text: trimmed });
+    setText("");
+    setKind("note");
+    setLogOpen(false);
   }
 
   const initials = account.name.split(" ").slice(0, 2).map((w) => w[0]).join("");
@@ -90,7 +110,7 @@ export function AccountDetail() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="subtle">Log activity</Button>
+            <Button variant="subtle" onClick={() => setLogOpen(true)}>Log activity</Button>
             <Button variant="primary">Message</Button>
           </div>
         </div>
@@ -188,6 +208,48 @@ export function AccountDetail() {
           </div>
         </div>
       </div>
+
+      <Modal
+        open={logOpen}
+        onClose={() => setLogOpen(false)}
+        title="Log activity"
+        description={`Add a touch to ${account.name}.`}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setLogOpen(false)}>Cancel</Button>
+            <Button variant="primary" onClick={saveActivity} disabled={!text.trim()}>
+              Save activity
+            </Button>
+          </>
+        }
+      >
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            saveActivity();
+          }}
+        >
+          <Field label="Type">
+            <Select value={kind} onChange={(e) => setKind(e.target.value as TimelineKind)}>
+              {ACTIVITY_KINDS.map((k) => (
+                <option key={k} value={k}>
+                  {k[0].toUpperCase() + k.slice(1)}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="What happened?">
+            <Textarea
+              autoFocus
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              placeholder="e.g. Call with the ops lead — confirmed the rollout date."
+            />
+          </Field>
+          <button type="submit" className="hidden" aria-hidden />
+        </form>
+      </Modal>
     </>
   );
 }

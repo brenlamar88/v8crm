@@ -5,10 +5,12 @@ engagements V8 delivers for operators in behavioral health, nonprofits, and
 field operations.
 
 It's built on a token-driven design system — every color, size, and motion
-value lives in one place — with real application screens on top: an **Overview**
-home, an **Accounts** workspace, and a living **Design System** style guide that
-documents the language. Additional destinations (Pipeline, Activity, Reports)
-are stubbed with honest empty states.
+value lives in one place — with real, interactive application screens on top:
+an **Overview** home, an **Accounts** workspace, an **account record** view, a
+**Pipeline** board, and a living **Design System** style guide. The console
+captures data too — creating an account and logging activity run through
+token-styled forms and a dialog, backed by a light client-side store. Remaining
+destinations (Activity, Reports) are stubbed with honest empty states.
 
 ## What informs the look
 
@@ -34,10 +36,11 @@ showcase is a documentation layout of its own.
 | Tokens | `src/styles/tokens.css` | Single source of truth — every color, size, duration as a CSS variable. Retheme here. |
 | Bridge | `tailwind.config.js` | Maps tokens to Tailwind utilities + motion keyframes. No off-system values allowed. |
 | Base | `src/index.css` | Resets, the `.eyebrow` / `.panel` / `.tabular` helpers, focus + scrollbar styling. |
-| Primitives | `src/components/*` | `Button`, `Badge`, `TrendPill`, `SegmentedControl`, `Toggle`, `StatCard`, `Sparkline`, `AccountsTable`, `Sidebar`, `Topbar`. |
-| Shell | `src/app/AppShell.tsx` | Sidebar + scrolling main; routes render inside it. |
-| Screens | `src/screens/*` | `Overview`, `AccountsScreen`, `StyleGuide`, `Placeholder`. |
-| Router | `src/App.tsx` | Routes: `/` Overview, `/accounts`, `/styleguide`, stubs for the rest. |
+| Primitives | `src/components/*` | `Button`, `Badge`, `TrendPill`, `SegmentedControl`, `Toggle`, `StatCard`, `Sparkline`, `Timeline`, `AccountsTable`, `Sidebar`, `Topbar`, plus `forms` (`Field`/`Input`/`Select`/`Textarea`) and `Modal`. |
+| Store | `src/store/accounts.tsx` | Client-side accounts state + mutations (create account, log activity) and the global New-account dialog. |
+| Shell | `src/app/AppShell.tsx` | Sidebar + scrolling main; hosts the global dialog. |
+| Screens | `src/screens/*` | `Overview`, `AccountsScreen`, `AccountDetail`, `Pipeline`, `StyleGuide`, `Placeholder`. |
+| Router | `src/App.tsx` | `/` Overview, `/accounts`, `/accounts/:code`, `/pipeline`, `/styleguide`, stubs for the rest. |
 
 **The rule:** components never hard-code a color, size, radius, or duration.
 They read token utilities only, so restyling the whole CRM means editing
