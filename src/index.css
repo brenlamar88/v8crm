@@ -1,0 +1,84 @@
+@import "@fontsource-variable/inter";
+@import "./styles/tokens.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    border-color: var(--v8-border);
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--v8-bg-base);
+    color: var(--v8-text);
+    font-family: var(--v8-font-sans);
+    font-size: var(--v8-text-body);
+    line-height: var(--v8-leading-normal);
+    letter-spacing: var(--v8-tracking-snug);
+    /* A faint violet aura in the corners, echoing the reference's lit canvas. */
+    background-image:
+      radial-gradient(60rem 40rem at 15% -10%, rgba(124, 92, 255, 0.1), transparent 60%),
+      radial-gradient(50rem 40rem at 110% 10%, rgba(90, 60, 220, 0.08), transparent 55%);
+    background-attachment: fixed;
+  }
+
+  /* Numerics line up in tables and metrics — a small thing that reads as rigor. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1, "cv01" 1, "ss01" 1;
+  }
+
+  ::selection {
+    background: var(--v8-accent-soft);
+    color: var(--v8-text);
+  }
+
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--v8-bg-base), 0 0 0 4px var(--v8-ring);
+    border-radius: var(--v8-radius-sm);
+  }
+
+  /* Slim, unobtrusive scrollbars in keeping with the dense surface. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--v8-surface-raised) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: var(--v8-surface-raised);
+    border-radius: var(--v8-radius-pill);
+    border: 3px solid var(--v8-bg-base);
+  }
+}
+
+@layer components {
+  /* The eyebrow label used across metrics and section headers. */
+  .eyebrow {
+    font-size: var(--v8-text-micro);
+    line-height: var(--v8-leading-snug);
+    letter-spacing: var(--v8-tracking-wide);
+    text-transform: uppercase;
+    color: var(--v8-text-muted);
+    font-weight: var(--v8-weight-semibold);
+  }
+
+  /* Hairline panel — the base container for cards and nav. */
+  .panel {
+    background-color: var(--v8-surface);
+    border: 1px solid var(--v8-border);
+    border-radius: var(--v8-radius-lg);
+  }
+}
