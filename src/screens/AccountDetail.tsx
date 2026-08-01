@@ -1,0 +1,193 @@
+/* ----------------------------------------------------------------------------
+   AccountDetail — the record view for a single engagement. Header with identity
+   + actions, a KPI strip, an engagement chart, the activity timeline, and a
+   side rail of account facts and contacts. Reached from any accounts table row.
+   -------------------------------------------------------------------------- */
+import { Link, useParams } from "react-router-dom";
+import { Topbar } from "../components/Topbar.tsx";
+import { Button, Badge } from "../components/primitives.tsx";
+import { Sparkline } from "../components/Sparkline.tsx";
+import { Timeline } from "../components/Timeline.tsx";
+import { Placeholder } from "./Placeholder.tsx";
+import { accountByCode, type Account, type EngagementStage } from "../data.ts";
+
+const stageTone: Record<EngagementStage, Parameters<typeof Badge>[0]["tone"]> = {
+  Discovery: "neutral",
+  Proposal: "accent",
+  Build: "accent",
+  Retainer: "up",
+  "At Risk": "down",
+};
+
+function healthTone(h: number): "up" | "warn" | "down" {
+  if (h >= 75) return "up";
+  if (h >= 55) return "warn";
+  return "down";
+}
+
+function DetailStat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="panel p-4">
+      <div className="eyebrow">{label}</div>
+      <div className="tabular mt-2 text-h1 font-bold leading-tight">{value}</div>
+      {sub && <div className="mt-1 text-body-sm text-text-muted">{sub}</div>}
+    </div>
+  );
+}
+
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-3 border-b border-[color:var(--v8-border)] last:border-0">
+      <span className="text-body-sm text-text-muted">{label}</span>
+      <span className="text-body-sm font-medium text-text-secondary text-right">{value}</span>
+    </div>
+  );
+}
+
+export function AccountDetail() {
+  const { code = "" } = useParams();
+  const account: Account | undefined = accountByCode(code);
+
+  if (!account) {
+    return (
+      <Placeholder title="Account not found" note={`No engagement matches ${code}.`} />
+    );
+  }
+
+  const initials = account.name.split(" ").slice(0, 2).map((w) => w[0]).join("");
+
+  return (
+    <>
+      <Topbar title="Accounts" subtitle="Account record" />
+      <div className="px-6 py-6">
+        <Link
+          to="/accounts"
+          className="inline-flex items-center gap-1.5 text-body-sm text-text-muted hover:text-text transition-colors duration-fast"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+          All accounts
+        </Link>
+
+        {/* Header */}
+        <div className="mt-4 flex flex-wrap items-start justify-between gap-4 animate-fade-rise">
+          <div className="flex items-center gap-4">
+            <span className="grid h-14 w-14 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent-200 text-h2 font-bold">
+              {initials}
+            </span>
+            <div>
+              <h2 className="text-h1 font-semibold">{account.name}</h2>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Badge tone={stageTone[account.stage]}>{account.stage}</Badge>
+                <span className="tabular rounded-pill bg-raised px-3 h-6 inline-flex items-center text-label text-text-secondary">
+                  {account.code}
+                </span>
+                <span className="rounded-pill bg-raised px-3 h-6 inline-flex items-center text-label text-text-secondary">
+                  {account.vertical}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="subtle">Log activity</Button>
+            <Button variant="primary">Message</Button>
+          </div>
+        </div>
+
+        {/* KPI strip */}
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <DetailStat label="MRR" value={account.mrr ? `$${account.mrr.toLocaleString("en-US")}` : "—"} sub={account.mrr ? "Monthly recurring" : "Not yet contracted"} />
+          <DetailStat label="Health" value={`${account.health}`} sub={healthTone(account.health) === "down" ? "Needs attention" : healthTone(account.health) === "warn" ? "Watch" : "Healthy"} />
+          <DetailStat label="Started" value={account.started} sub={`Owner · ${account.owner}`} />
+          <DetailStat label="Renewal" value={account.renewal} sub={account.renewal === "—" ? "No contract yet" : "Contract term"} />
+        </div>
+
+        {/* Body */}
+        <div className="mt-4 grid gap-4 xl:grid-cols-3">
+          {/* Left column */}
+          <div className="flex flex-col gap-4 xl:col-span-2">
+            <div className="panel p-6 animate-fade-rise" style={{ animationDelay: "80ms" }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="eyebrow">Engagement value · trailing</span>
+                  <div className="mt-2 flex items-baseline gap-1">
+                    <span className="tabular text-display font-bold leading-tight">
+                      {account.mrr ? `$${(account.mrr / 1000).toFixed(1)}` : "—"}
+                    </span>
+                    {account.mrr > 0 && <span className="tabular text-h2 font-semibold text-text-muted">K</span>}
+                  </div>
+                </div>
+                <div
+                  className="rounded-md px-3 h-6 inline-flex items-center text-label font-semibold"
+                  style={{ background: "var(--v8-accent-softer)", color: "var(--v8-accent-200)" }}
+                >
+                  Trend
+                </div>
+              </div>
+              <div className="mt-6">
+                <Sparkline
+                  data={account.trend}
+                  height={120}
+                  tone={account.stage === "At Risk" ? "down" : "accent"}
+                />
+              </div>
+            </div>
+
+            <div className="panel p-6 animate-fade-rise" style={{ animationDelay: "140ms" }}>
+              <h3 className="text-h3 font-semibold">Activity</h3>
+              <p className="text-body-sm text-text-muted mb-5">Recent touches on this account</p>
+              <Timeline events={account.timeline} />
+            </div>
+          </div>
+
+          {/* Right rail */}
+          <div className="flex flex-col gap-4">
+            <div className="panel p-6 animate-fade-rise" style={{ animationDelay: "100ms" }}>
+              <span className="eyebrow">Summary</span>
+              <p className="mt-3 text-body text-text-secondary">{account.summary}</p>
+            </div>
+
+            <div className="panel p-6 animate-fade-rise" style={{ animationDelay: "160ms" }}>
+              <span className="eyebrow">Next step</span>
+              <div className="mt-3 flex items-start gap-3 rounded-md bg-accent-softer p-3">
+                <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-accent-400" />
+                <p className="text-body text-text">{account.nextStep}</p>
+              </div>
+            </div>
+
+            <div className="panel p-6 animate-fade-rise" style={{ animationDelay: "200ms" }}>
+              <span className="eyebrow">Details</span>
+              <div className="mt-2">
+                <Fact label="Vertical" value={account.vertical} />
+                <Fact label="Stage" value={account.stage} />
+                <Fact label="Owner" value={account.owner} />
+                <Fact label="Started" value={account.started} />
+                <Fact label="Renewal" value={account.renewal} />
+              </div>
+            </div>
+
+            <div className="panel p-6 animate-fade-rise" style={{ animationDelay: "240ms" }}>
+              <span className="eyebrow">Contacts</span>
+              <div className="mt-4 flex flex-col gap-4">
+                {account.contacts.map((c) => (
+                  <div key={c.email} className="flex items-center gap-3">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-raised text-label font-bold text-text-secondary">
+                      {c.name.split(" ").map((w) => w[0]).join("")}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="truncate text-body-sm font-semibold">{c.name}</div>
+                      <div className="truncate text-label text-text-muted">
+                        {c.role} · {c.email}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}

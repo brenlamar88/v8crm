@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppShell } from "./app/AppShell.tsx";
 import { Overview } from "./screens/Overview.tsx";
 import { AccountsScreen } from "./screens/AccountsScreen.tsx";
+import { AccountDetail } from "./screens/AccountDetail.tsx";
+import { Pipeline } from "./screens/Pipeline.tsx";
 import { StyleGuide } from "./screens/StyleGuide.tsx";
 import { Placeholder } from "./screens/Placeholder.tsx";
 
@@ -16,10 +18,8 @@ export function App() {
         <Route element={<AppShell />}>
           <Route index element={<Overview />} />
           <Route path="accounts" element={<AccountsScreen />} />
-          <Route
-            path="pipeline"
-            element={<Placeholder title="Pipeline" note="A stage-by-stage board for deals in flight, built on the same cards and tokens." />}
-          />
+          <Route path="accounts/:code" element={<AccountDetail />} />
+          <Route path="pipeline" element={<Pipeline />} />
           <Route
             path="activity"
             element={<Placeholder title="Activity" note="A unified timeline of touches across every account." />}

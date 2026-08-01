@@ -3,6 +3,7 @@
    fast tinted wash; the health column pairs a bar with a value; stage uses the
    Badge tones. Numerics are tabular so columns align to the pixel.
    -------------------------------------------------------------------------- */
+import { useNavigate } from "react-router-dom";
 import { Badge } from "./primitives.tsx";
 import { Sparkline } from "./Sparkline.tsx";
 import type { Account, EngagementStage } from "../data.ts";
@@ -35,6 +36,7 @@ export function AccountsTable({
   title?: string;
   subtitle?: string;
 }) {
+  const navigate = useNavigate();
   return (
     <div className="panel overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 border-b border-[color:var(--v8-border)]">
@@ -62,7 +64,8 @@ export function AccountsTable({
             {accounts.map((a) => (
               <tr
                 key={a.code}
-                className="group border-t border-[color:var(--v8-border)] transition-colors duration-fast ease-out hover:bg-raised/60"
+                onClick={() => navigate(`/accounts/${a.code}`)}
+                className="group cursor-pointer border-t border-[color:var(--v8-border)] transition-colors duration-fast ease-out hover:bg-raised/60"
               >
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-3">
