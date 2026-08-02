@@ -24,16 +24,57 @@ export function Modal({
 
   useEffect(() => {
     if (!open) return;
+    // Remember what was focused so we can restore it when the dialog closes.
+    const opener = document.activeElement as HTMLElement | null;
+
+    const focusables = () =>
+      Array.from(
+        panelRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((el) => el.offsetParent !== null || el === panelRef.current);
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (e.key !== "Tab") return;
+      // Trap focus within the panel.
+      const items = focusables();
+      if (items.length === 0) {
+        e.preventDefault();
+        panelRef.current?.focus();
+        return;
+      }
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      if (e.shiftKey && (active === first || active === panelRef.current)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
+
     document.addEventListener("keydown", onKey);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    panelRef.current?.focus();
+    // Prefer the first form field (honors the dialogs' autofocus intent); fall
+    // back to the first focusable control, then the panel.
+    const items = focusables();
+    const firstField = items.find((el) =>
+      ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName),
+    );
+    (firstField ?? items[0] ?? panelRef.current)?.focus();
+
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
+      // Restore focus to whatever opened the dialog.
+      opener?.focus?.();
     };
   }, [open, onClose]);
 
