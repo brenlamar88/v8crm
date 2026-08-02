@@ -273,12 +273,20 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
     (code: string, taskId: string) => {
       const current = accounts.find((a) => a.code === code);
       if (!current) return;
-      writeTasks(
-        code,
-        current.tasks.map((t) => (t.id === taskId ? { ...t, done: !t.done } : t)),
-      );
+      const task = current.tasks.find((t) => t.id === taskId);
+      const nowDone = task ? !task.done : false;
+      const tasks = current.tasks.map((t) => (t.id === taskId ? { ...t, done: !t.done } : t));
+      // Completing a task leaves a mark on the timeline (feeds Activity + the
+      // bell). Done in one write so it can't race the task update.
+      const timeline =
+        nowDone && task
+          ? [{ when: "just now", kind: "note" as const, text: `Completed: ${task.title}` }, ...current.timeline]
+          : current.timeline;
+      const merged = { ...current, tasks, timeline };
+      setAccounts(accounts.map((a) => (a.code === code ? merged : a)));
+      trackSync(upsertAccount(merged, wsRef.current ?? ""));
     },
-    [accounts, writeTasks],
+    [accounts, trackSync],
   );
 
   const removeTask = useCallback(
