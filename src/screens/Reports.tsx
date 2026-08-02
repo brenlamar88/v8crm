@@ -7,8 +7,11 @@ import { useMemo } from "react";
 import { Topbar } from "../components/Topbar.tsx";
 import { Button } from "../components/primitives.tsx";
 import { useAccounts } from "../store/accounts.tsx";
+import { useTime } from "../store/time.tsx";
+import { useWorkspace } from "../store/workspace.tsx";
 import { pipelineStages, type Account } from "../data.ts";
 import { accountsToCsv, downloadText } from "../lib/export.ts";
+import { capacityHours, inPeriod, pct, realization, summarize, utilization } from "../lib/metrics.ts";
 
 function money(n: number): string {
   return "$" + n.toLocaleString("en-US");
@@ -36,11 +39,12 @@ function groupBy(accounts: Account[], pick: (a: Account) => string): Group[] {
   }));
 }
 
-function Stat({ label, value, sub }: { label: string; value: string; sub: string }) {
+function Stat({ label, value, sub, tone }: { label: string; value: string; sub: string; tone?: "up" | "warn" | "down" }) {
+  const color = tone === "up" ? "text-up" : tone === "warn" ? "text-warn" : tone === "down" ? "text-down" : "";
   return (
     <div className="panel p-5">
       <div className="eyebrow">{label}</div>
-      <div className="tabular mt-2 text-display font-bold leading-tight">{value}</div>
+      <div className={["tabular mt-2 text-display font-bold leading-tight", color].join(" ")}>{value}</div>
       <div className="mt-1 text-body-sm text-text-muted">{sub}</div>
     </div>
   );
@@ -100,6 +104,25 @@ function BreakdownTable({
 
 export function Reports() {
   const { accounts } = useAccounts();
+  const { entries } = useTime();
+  const { enabled: teamEnabled, members } = useWorkspace();
+
+  // Operating metrics (this month): utilization, realization, retainer mix.
+  const operating = useMemo(() => {
+    const monthEntries = entries.filter((e) => inPeriod(e.date, "month"));
+    const s = summarize(monthEntries);
+    const people = teamEnabled ? Math.max(1, members.length) : 1;
+    const cap = capacityHours(40, people, "month");
+    const totalMrr = accounts.reduce((sum, a) => sum + a.mrr, 0);
+    const retainerMrr = accounts.filter((a) => a.stage === "Retainer").reduce((sum, a) => sum + a.mrr, 0);
+    return {
+      util: utilization(s.billable, cap),
+      real: realization(s.billed, s.billable),
+      billable: s.billable,
+      retainerShare: totalMrr > 0 ? retainerMrr / totalMrr : 0,
+      hasTime: s.billable > 0,
+    };
+  }, [entries, accounts, teamEnabled, members]);
 
   const { mrr, arr, avgHealth, byVertical, byStage, maxV, maxS } = useMemo(() => {
     const mrr = accounts.reduce((s, a) => s + a.mrr, 0);
@@ -150,6 +173,32 @@ export function Reports() {
           <Stat label="Annualized" value={money(arr)} sub="MRR × 12" />
           <Stat label="Accounts" value={`${accounts.length}`} sub="Active engagements" />
           <Stat label="Avg Health" value={`${avgHealth}`} sub="Weighted evenly" />
+        </div>
+
+        <div className="mb-2 mt-6 flex items-baseline justify-between">
+          <span className="eyebrow">Operating · this month</span>
+          <span className="text-label text-text-muted">Utilization & realization from logged time</span>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <Stat
+            label="Utilization"
+            value={operating.hasTime ? pct(operating.util) : "—"}
+            sub="Billable ÷ capacity"
+            tone={!operating.hasTime ? undefined : operating.util >= 0.7 ? "up" : operating.util >= 0.55 ? "warn" : "down"}
+          />
+          <Stat
+            label="Realization"
+            value={operating.hasTime ? pct(operating.real) : "—"}
+            sub="Billed ÷ billable worked"
+            tone={!operating.hasTime ? undefined : operating.real >= 0.9 ? "up" : operating.real >= 0.75 ? "warn" : "down"}
+          />
+          <Stat
+            label="Retainer share"
+            value={pct(operating.retainerShare)}
+            sub="Recurring ÷ total MRR"
+            tone={operating.retainerShare >= 0.6 ? "up" : operating.retainerShare >= 0.4 ? "warn" : "down"}
+          />
+          <Stat label="Billable hours" value={operating.billable.toFixed(1)} sub="Logged this month" />
         </div>
 
         <div className="mt-4 grid gap-4 xl:grid-cols-2">
