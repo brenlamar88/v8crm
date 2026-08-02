@@ -8,6 +8,7 @@ import { Topbar } from "../components/Topbar.tsx";
 import { Button, Badge } from "../components/primitives.tsx";
 import { Field, Input } from "../components/forms.tsx";
 import { ACCENTS, applyAccent, applyMode, getSavedAccent, getSavedMode, type Mode } from "../lib/theme.ts";
+import { isSupabaseEnabled } from "../lib/supabase.ts";
 
 function Card({ title, desc, children }: { title: string; desc: string; children: React.ReactNode }) {
   return (
@@ -114,12 +115,29 @@ export function Settings() {
             </div>
           </Card>
 
-          <Card title="Data" desc="This demo keeps your book in the browser. Reset to restore the sample accounts.">
+          <Card title="Data" desc="Where your book is stored and how to reset it.">
+            <div className="mb-5 flex items-center gap-3">
+              {isSupabaseEnabled ? (
+                <>
+                  <Badge tone="up">Supabase</Badge>
+                  <span className="text-body-sm text-text-muted">
+                    Synced to your Postgres database.
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Badge tone="neutral" dot={false}>Local</Badge>
+                  <span className="text-body-sm text-text-muted">
+                    Stored in this browser. Connect Supabase to sync.
+                  </span>
+                </>
+              )}
+            </div>
             <div className="flex items-center justify-between gap-4">
               <p className="text-body-sm text-text-muted">
-                Clears created accounts and logged activity from this browser.
+                Clears the local cache and restores the sample accounts.
               </p>
-              <Button variant="subtle" onClick={resetData}>Reset demo data</Button>
+              <Button variant="subtle" onClick={resetData}>Reset local data</Button>
             </div>
           </Card>
         </div>

@@ -13,6 +13,13 @@ import {
   type EngagementStage,
   type TimelineEvent,
 } from "../data.ts";
+import {
+  isSupabaseEnabled,
+  fetchAccounts,
+  upsertAccount,
+  deleteAccountRow,
+  seedIfEmpty,
+} from "../lib/supabase.ts";
 
 /* Persistence — accounts survive a refresh via localStorage. The stored blob
    is versioned; a version bump (or corrupt/absent data) falls back to the seed
@@ -78,7 +85,27 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
   const [accounts, setAccounts] = useState<Account[]>(loadAccounts);
   const [newAccountOpen, setNewAccountOpen] = useState(false);
 
-  // Persist on every change to the book.
+  // Hydrate from Supabase once on mount when it's configured. Remote rows win;
+  // an empty table is seeded from what we have locally; any failure (missing
+  // table, network, RLS) leaves the local data untouched.
+  useEffect(() => {
+    if (!isSupabaseEnabled) return;
+    let cancelled = false;
+    (async () => {
+      const remote = await fetchAccounts();
+      if (cancelled) return;
+      if (remote && remote.length > 0) {
+        setAccounts(remote);
+      } else if (remote) {
+        await seedIfEmpty(loadAccounts());
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Cache the book locally on every change — offline fallback + instant boot.
   useEffect(() => {
     saveAccounts(accounts);
   }, [accounts]);
@@ -88,12 +115,11 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
     [accounts],
   );
 
-  const addAccount = useCallback((input: NewAccountInput) => {
-    let created!: Account;
-    setAccounts((prev) => {
-      created = {
+  const addAccount = useCallback(
+    (input: NewAccountInput) => {
+      const created: Account = {
         name: input.name,
-        code: nextCode(prev),
+        code: nextCode(accounts),
         vertical: input.vertical,
         stage: input.stage,
         mrr: input.mrr,
@@ -107,36 +133,53 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
         contacts: [],
         timeline: [{ when: "just now", kind: "note", text: "Account created." }],
       };
-      return [created, ...prev];
-    });
-    return created;
-  }, []);
+      setAccounts([created, ...accounts]);
+      void upsertAccount(created);
+      return created;
+    },
+    [accounts],
+  );
 
-  const updateAccount = useCallback((code: string, patch: Partial<Account>) => {
-    setAccounts((prev) =>
-      prev.map((a) => (a.code === code ? { ...a, ...patch } : a)),
-    );
-  }, []);
+  const updateAccount = useCallback(
+    (code: string, patch: Partial<Account>) => {
+      const current = accounts.find((a) => a.code === code);
+      if (!current) return;
+      const merged = { ...current, ...patch };
+      setAccounts(accounts.map((a) => (a.code === code ? merged : a)));
+      void upsertAccount(merged);
+    },
+    [accounts],
+  );
 
-  const removeAccount = useCallback((code: string) => {
-    setAccounts((prev) => prev.filter((a) => a.code !== code));
-  }, []);
+  const removeAccount = useCallback(
+    (code: string) => {
+      setAccounts(accounts.filter((a) => a.code !== code));
+      void deleteAccountRow(code);
+    },
+    [accounts],
+  );
 
-  const addContact = useCallback((code: string, contact: Contact) => {
-    setAccounts((prev) =>
-      prev.map((a) =>
-        a.code === code ? { ...a, contacts: [...a.contacts, contact] } : a,
-      ),
-    );
-  }, []);
+  const addContact = useCallback(
+    (code: string, contact: Contact) => {
+      const current = accounts.find((a) => a.code === code);
+      if (!current) return;
+      const merged = { ...current, contacts: [...current.contacts, contact] };
+      setAccounts(accounts.map((a) => (a.code === code ? merged : a)));
+      void upsertAccount(merged);
+    },
+    [accounts],
+  );
 
-  const logActivity = useCallback((code: string, event: TimelineEvent) => {
-    setAccounts((prev) =>
-      prev.map((a) =>
-        a.code === code ? { ...a, timeline: [event, ...a.timeline] } : a,
-      ),
-    );
-  }, []);
+  const logActivity = useCallback(
+    (code: string, event: TimelineEvent) => {
+      const current = accounts.find((a) => a.code === code);
+      if (!current) return;
+      const merged = { ...current, timeline: [event, ...current.timeline] };
+      setAccounts(accounts.map((a) => (a.code === code ? merged : a)));
+      void upsertAccount(merged);
+    },
+    [accounts],
+  );
 
   const value = useMemo<AccountsContextValue>(
     () => ({

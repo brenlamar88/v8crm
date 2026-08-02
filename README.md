@@ -74,6 +74,32 @@ Configured for Vercel (`vercel.json`): framework preset `vite`, output `dist`,
 with an SPA rewrite so client-side routes resolve on refresh. Vercel builds from
 whatever branch is set as the project's Production Branch — point that at `main`.
 
+## Backend (Supabase)
+
+The store is **local-first with a Supabase sync layer**. With no database
+configured it runs entirely on `localStorage` (the default, and how it runs
+locally). When the Supabase env vars are present it hydrates from Postgres on
+load and writes every mutation back. Any failure — missing table, network, RLS —
+silently falls back to local, so the app never breaks.
+
+To turn on the real backend:
+
+1. **Run the schema.** In your Supabase project → SQL Editor, paste and run
+   [`supabase/schema.sql`](./supabase/schema.sql). It creates the `accounts`
+   table and (demo-open) RLS policies.
+2. **Env vars.** The Vercel Supabase integration already exposes the project URL
+   and anon key; `vite.config.ts` bridges them to the client build, accepting
+   `SUPABASE_URL` / `SUPABASE_ANON_KEY`, their `NEXT_PUBLIC_` variants, or
+   explicit `VITE_` ones. If Settings → Data still shows **Local**, add
+   `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in Vercel and redeploy.
+3. **Verify.** Settings → Data shows a **Supabase** badge when the client is
+   live. Only the public **anon** key ever reaches the browser; the service-role
+   key is never referenced.
+
+> Security note: the demo has no sign-in, so the RLS policies grant the anon key
+> full access — fine for a single-tenant demo, open otherwise. Add Supabase Auth
+> and scope the policies to `auth.uid()` before this holds real data.
+
 ## Stack
 
 Vite · React 18 · TypeScript · React Router 6 · Tailwind 3 (wired to CSS custom
