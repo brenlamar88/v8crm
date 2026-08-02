@@ -10,7 +10,7 @@ import { Button, Badge } from "../components/primitives.tsx";
 import { Sparkline } from "../components/Sparkline.tsx";
 import { Timeline } from "../components/Timeline.tsx";
 import { Modal } from "../components/Modal.tsx";
-import { Field, Select, Textarea } from "../components/forms.tsx";
+import { Field, Input, Select, Textarea } from "../components/forms.tsx";
 import { EditAccountModal } from "../components/EditAccountModal.tsx";
 import { useToast } from "../components/toast.tsx";
 import { Placeholder } from "./Placeholder.tsx";
@@ -54,7 +54,7 @@ const ACTIVITY_KINDS: TimelineKind[] = ["note", "call", "email", "ship", "risk"]
 
 export function AccountDetail() {
   const { code = "" } = useParams();
-  const { getAccount, logActivity, removeAccount } = useAccounts();
+  const { getAccount, logActivity, removeAccount, addContact } = useAccounts();
   const toast = useToast();
   const navigate = useNavigate();
   const account: Account | undefined = getAccount(code);
@@ -62,8 +62,12 @@ export function AccountDetail() {
   const [logOpen, setLogOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
   const [kind, setKind] = useState<TimelineKind>("note");
   const [text, setText] = useState("");
+  const [cName, setCName] = useState("");
+  const [cRole, setCRole] = useState("");
+  const [cEmail, setCEmail] = useState("");
 
   if (!account) {
     return (
@@ -87,6 +91,21 @@ export function AccountDetail() {
     removeAccount(code);
     navigate("/accounts");
     toast(`${name} deleted`, "warn");
+  }
+
+  function saveContact() {
+    const name = cName.trim();
+    if (!name) return;
+    addContact(code, {
+      name,
+      role: cRole.trim() || "Contact",
+      email: cEmail.trim() || "—",
+    });
+    setCName("");
+    setCRole("");
+    setCEmail("");
+    setContactOpen(false);
+    toast("Contact added");
   }
 
   const initials = account.name.split(" ").slice(0, 2).map((w) => w[0]).join("");
@@ -204,8 +223,19 @@ export function AccountDetail() {
             </div>
 
             <div className="panel p-6 animate-fade-rise" style={{ animationDelay: "240ms" }}>
-              <span className="eyebrow">Contacts</span>
+              <div className="flex items-center justify-between">
+                <span className="eyebrow">Contacts</span>
+                <button
+                  onClick={() => setContactOpen(true)}
+                  className="text-label font-semibold text-accent-400 hover:text-accent-200 transition-colors duration-fast"
+                >
+                  + Add
+                </button>
+              </div>
               <div className="mt-4 flex flex-col gap-4">
+                {account.contacts.length === 0 && (
+                  <p className="text-body-sm text-text-muted">No contacts yet.</p>
+                )}
                 {account.contacts.map((c) => (
                   <div key={c.email} className="flex items-center gap-3">
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-raised text-label font-bold text-text-secondary">
@@ -234,6 +264,40 @@ export function AccountDetail() {
           setConfirmOpen(true);
         }}
       />
+
+      <Modal
+        open={contactOpen}
+        onClose={() => setContactOpen(false)}
+        title="Add contact"
+        description={`New contact on ${account.name}.`}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setContactOpen(false)}>Cancel</Button>
+            <Button variant="primary" onClick={saveContact} disabled={!cName.trim()}>Add contact</Button>
+          </>
+        }
+      >
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            saveContact();
+          }}
+        >
+          <Field label="Name">
+            <Input autoFocus value={cName} onChange={(e) => setCName(e.target.value)} placeholder="e.g. Jordan Lee" />
+          </Field>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Role">
+              <Input value={cRole} onChange={(e) => setCRole(e.target.value)} placeholder="e.g. Ops Director" />
+            </Field>
+            <Field label="Email">
+              <Input type="email" value={cEmail} onChange={(e) => setCEmail(e.target.value)} placeholder="name@company.com" />
+            </Field>
+          </div>
+          <button type="submit" className="hidden" aria-hidden />
+        </form>
+      </Modal>
 
       <Modal
         open={confirmOpen}

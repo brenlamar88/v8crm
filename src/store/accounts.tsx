@@ -9,6 +9,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import {
   accounts as seedAccounts,
   type Account,
+  type Contact,
   type EngagementStage,
   type TimelineEvent,
 } from "../data.ts";
@@ -54,6 +55,7 @@ interface AccountsContextValue {
   addAccount: (input: NewAccountInput) => Account;
   updateAccount: (code: string, patch: Partial<Account>) => void;
   removeAccount: (code: string) => void;
+  addContact: (code: string, contact: Contact) => void;
   logActivity: (code: string, event: TimelineEvent) => void;
   newAccountOpen: boolean;
   openNewAccount: () => void;
@@ -120,6 +122,14 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
     setAccounts((prev) => prev.filter((a) => a.code !== code));
   }, []);
 
+  const addContact = useCallback((code: string, contact: Contact) => {
+    setAccounts((prev) =>
+      prev.map((a) =>
+        a.code === code ? { ...a, contacts: [...a.contacts, contact] } : a,
+      ),
+    );
+  }, []);
+
   const logActivity = useCallback((code: string, event: TimelineEvent) => {
     setAccounts((prev) =>
       prev.map((a) =>
@@ -135,12 +145,13 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
       addAccount,
       updateAccount,
       removeAccount,
+      addContact,
       logActivity,
       newAccountOpen,
       openNewAccount: () => setNewAccountOpen(true),
       closeNewAccount: () => setNewAccountOpen(false),
     }),
-    [accounts, getAccount, addAccount, updateAccount, removeAccount, logActivity, newAccountOpen],
+    [accounts, getAccount, addAccount, updateAccount, removeAccount, addContact, logActivity, newAccountOpen],
   );
 
   return <AccountsContext.Provider value={value}>{children}</AccountsContext.Provider>;
