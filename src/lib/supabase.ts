@@ -171,21 +171,24 @@ export async function fetchAccounts(): Promise<Account[] | null> {
   return (data as AccountRow[]).map(fromRow);
 }
 
-/** Insert or update one account. Best-effort. owner_id is defaulted to
-    auth.uid() server-side, so the conflict target is (owner_id, code). */
-export async function upsertAccount(account: Account): Promise<void> {
-  if (!supabase) return;
+/** Insert or update one account. owner_id is defaulted to auth.uid() server-side,
+    so the conflict target is (owner_id, code). Returns true on success (or when
+    Supabase is off — nothing to sync), false when the write didn't reach the DB. */
+export async function upsertAccount(account: Account): Promise<boolean> {
+  if (!supabase) return true;
   const { error } = await supabase
     .from(TABLE)
     .upsert(toRow(account), { onConflict: "owner_id,code" });
   if (error) console.warn("[supabase] upsert failed:", error.message);
+  return !error;
 }
 
-/** Remove one account. Best-effort. */
-export async function deleteAccountRow(code: string): Promise<void> {
-  if (!supabase) return;
+/** Remove one account. Returns true on success (or Supabase-off), false on failure. */
+export async function deleteAccountRow(code: string): Promise<boolean> {
+  if (!supabase) return true;
   const { error } = await supabase.from(TABLE).delete().eq("code", code);
   if (error) console.warn("[supabase] delete failed:", error.message);
+  return !error;
 }
 
 export type AccountChange =

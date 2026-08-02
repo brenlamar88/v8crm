@@ -5,7 +5,7 @@
    state that the topbar action opens from anywhere. No external state library;
    a context + useState is enough at this size.
    -------------------------------------------------------------------------- */
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   accounts as seedAccounts,
   type Account,
@@ -22,6 +22,7 @@ import {
   subscribeToAccounts,
 } from "../lib/supabase.ts";
 import { useAuth } from "./auth.tsx";
+import { useToast } from "../components/toast.tsx";
 
 /* Persistence — accounts survive a refresh via localStorage. The stored blob
    is versioned; a version bump (or corrupt/absent data) falls back to the seed
@@ -90,6 +91,25 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
   const [accounts, setAccounts] = useState<Account[]>(loadAccounts);
   const [newAccountOpen, setNewAccountOpen] = useState(false);
   const userId = useAuth().user?.id;
+  const toast = useToast();
+
+  // Watch background sync results; toast only on the transition to/from offline
+  // so a run of failures (or recoveries) doesn't spam.
+  const offline = useRef(false);
+  const trackSync = useCallback(
+    (result: Promise<boolean>) => {
+      void result.then((ok) => {
+        if (!ok && !offline.current) {
+          offline.current = true;
+          toast("Couldn't reach the server — changes are saved on this device", "warn");
+        } else if (ok && offline.current) {
+          offline.current = false;
+          toast("Back online — changes are syncing");
+        }
+      });
+    },
+    [toast],
+  );
 
   // Hydrate from Supabase when configured, re-running if the signed-in user
   // changes. Remote rows win; an empty table is seeded from what we have
@@ -158,7 +178,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
         tasks: [],
       };
       setAccounts([created, ...accounts]);
-      void upsertAccount(created);
+      trackSync(upsertAccount(created));
       return created;
     },
     [accounts],
@@ -170,7 +190,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
       if (!current) return;
       const merged = { ...current, ...patch };
       setAccounts(accounts.map((a) => (a.code === code ? merged : a)));
-      void upsertAccount(merged);
+      trackSync(upsertAccount(merged));
     },
     [accounts],
   );
@@ -178,7 +198,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
   const removeAccount = useCallback(
     (code: string) => {
       setAccounts(accounts.filter((a) => a.code !== code));
-      void deleteAccountRow(code);
+      trackSync(deleteAccountRow(code));
     },
     [accounts],
   );
@@ -189,7 +209,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
       if (!current) return;
       const merged = { ...current, contacts: [...current.contacts, contact] };
       setAccounts(accounts.map((a) => (a.code === code ? merged : a)));
-      void upsertAccount(merged);
+      trackSync(upsertAccount(merged));
     },
     [accounts],
   );
@@ -200,7 +220,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
       if (!current) return;
       const merged = { ...current, tasks };
       setAccounts(accounts.map((a) => (a.code === code ? merged : a)));
-      void upsertAccount(merged);
+      trackSync(upsertAccount(merged));
     },
     [accounts],
   );
@@ -242,7 +262,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
       if (!current) return;
       const merged = { ...current, timeline: [event, ...current.timeline] };
       setAccounts(accounts.map((a) => (a.code === code ? merged : a)));
-      void upsertAccount(merged);
+      trackSync(upsertAccount(merged));
     },
     [accounts],
   );
