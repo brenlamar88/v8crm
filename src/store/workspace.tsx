@@ -8,9 +8,11 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import {
   acceptInvitations,
   fetchWorkspaces,
+  fetchMembers,
   createWorkspace as rpcCreateWorkspace,
   renameWorkspace as apiRename,
   type Workspace,
+  type Member,
 } from "../lib/supabase.ts";
 import { useAuth } from "./auth.tsx";
 
@@ -22,8 +24,10 @@ interface WorkspaceValue {
   workspaces: Workspace[];
   currentId: string | null;
   current: Workspace | null;
+  members: Member[];
   setCurrent: (id: string) => void;
   refresh: () => Promise<void>;
+  refreshMembers: () => Promise<void>;
   createWorkspace: (name: string) => Promise<void>;
   rename: (id: string, name: string) => Promise<void>;
 }
@@ -34,6 +38,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { enabled, user } = useAuth();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(null);
+  const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(enabled);
 
   const setCurrent = useCallback((id: string) => {
@@ -76,6 +81,20 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     void load();
   }, [load, enabled, user]);
 
+  const refreshMembers = useCallback(async () => {
+    if (!enabled || !currentId) {
+      setMembers([]);
+      return;
+    }
+    setMembers(await fetchMembers(currentId));
+  }, [enabled, currentId]);
+
+  // Keep the roster in sync with the selected workspace, so any screen can
+  // resolve assignees / "me" without its own fetch.
+  useEffect(() => {
+    void refreshMembers();
+  }, [refreshMembers]);
+
   const createWorkspace = useCallback(
     async (name: string) => {
       const id = await rpcCreateWorkspace(name);
@@ -102,8 +121,10 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         workspaces,
         currentId,
         current: workspaces.find((w) => w.id === currentId) ?? null,
+        members,
         setCurrent,
         refresh: load,
+        refreshMembers,
         createWorkspace,
         rename,
       }}

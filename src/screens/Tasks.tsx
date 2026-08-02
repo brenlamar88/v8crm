@@ -6,12 +6,14 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Topbar } from "../components/Topbar.tsx";
+import { AssigneeChip } from "../components/AssigneeChip.tsx";
 import { useAccounts } from "../store/accounts.tsx";
+import { useWorkspace } from "../store/workspace.tsx";
+import { useAuth } from "../store/auth.tsx";
 import { type Task, dueLabel, dueStatus, dueSortKey } from "../data.ts";
 
 type Row = Task & { account: string; code: string };
-type Filter = "Open" | "Overdue" | "All" | "Done";
-const FILTERS: Filter[] = ["Open", "Overdue", "All", "Done"];
+type Filter = "Open" | "Mine" | "Overdue" | "All" | "Done";
 
 /** Due-label color: overdue red, due-today amber, done faint, else muted. */
 function dueClass(t: Row): string {
@@ -24,8 +26,16 @@ function dueClass(t: Row): string {
 
 export function Tasks() {
   const { accounts, toggleTask } = useAccounts();
+  const { enabled: teamEnabled } = useWorkspace();
+  const { user } = useAuth();
+  const me = (user?.email ?? "").toLowerCase();
   const navigate = useNavigate();
   const [filter, setFilter] = useState<Filter>("Open");
+
+  // "Mine" only makes sense with a signed-in team; hide it otherwise.
+  const filters: Filter[] = teamEnabled
+    ? ["Open", "Mine", "Overdue", "All", "Done"]
+    : ["Open", "Overdue", "All", "Done"];
 
   const all = useMemo<Row[]>(
     () =>
@@ -47,9 +57,11 @@ export function Tasks() {
       ? true
       : filter === "Open"
         ? !r.done
-        : filter === "Overdue"
-          ? !r.done && dueStatus(r) === "overdue"
-          : r.done,
+        : filter === "Mine"
+          ? !r.done && (r.assignee ?? "").toLowerCase() === me
+          : filter === "Overdue"
+            ? !r.done && dueStatus(r) === "overdue"
+            : r.done,
   );
 
   const subtitle =
@@ -62,7 +74,7 @@ export function Tasks() {
       <Topbar title="Tasks" subtitle={subtitle} />
       <div className="px-6 py-6">
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          {FILTERS.map((f) => {
+          {filters.map((f) => {
             const isOverdue = f === "Overdue";
             const count = isOverdue ? overdueCount : 0;
             return (
@@ -92,9 +104,11 @@ export function Tasks() {
             <div className="grid h-32 place-items-center text-body text-text-muted">
               {filter === "Open"
                 ? "No open tasks — nice."
-                : filter === "Overdue"
-                  ? "Nothing overdue — you're on top of it."
-                  : "No tasks here."}
+                : filter === "Mine"
+                  ? "Nothing assigned to you."
+                  : filter === "Overdue"
+                    ? "Nothing overdue — you're on top of it."
+                    : "No tasks here."}
             </div>
           ) : (
             rows.map((r) => (
@@ -131,6 +145,7 @@ export function Tasks() {
                     {dueLabel(r)}
                   </span>
                 )}
+                {teamEnabled && <AssigneeChip email={r.assignee} size={22} />}
               </div>
             ))
           )}

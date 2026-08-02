@@ -12,9 +12,11 @@ import { Timeline } from "../components/Timeline.tsx";
 import { Modal } from "../components/Modal.tsx";
 import { Field, Input, Select, Textarea } from "../components/forms.tsx";
 import { EditAccountModal } from "../components/EditAccountModal.tsx";
+import { AssigneeChip } from "../components/AssigneeChip.tsx";
 import { useToast } from "../components/toast.tsx";
 import { Placeholder } from "./Placeholder.tsx";
 import { useAccounts } from "../store/accounts.tsx";
+import { useWorkspace } from "../store/workspace.tsx";
 import { type Account, type EngagementStage, type TimelineKind, dueLabel, dueStatus } from "../data.ts";
 
 const stageTone: Record<EngagementStage, Parameters<typeof Badge>[0]["tone"]> = {
@@ -70,6 +72,8 @@ export function AccountDetail() {
   const [cEmail, setCEmail] = useState("");
   const [taskTitle, setTaskTitle] = useState("");
   const [taskDue, setTaskDue] = useState("");
+  const [taskAssignee, setTaskAssignee] = useState("");
+  const { enabled: teamEnabled, members } = useWorkspace();
 
   if (!account) {
     return (
@@ -113,9 +117,10 @@ export function AccountDetail() {
   function submitTask() {
     const title = taskTitle.trim();
     if (!title) return;
-    addTask(code, title, taskDue.trim());
+    addTask(code, title, taskDue.trim(), taskAssignee || undefined);
     setTaskTitle("");
     setTaskDue("");
+    setTaskAssignee("");
   }
 
   const initials = account.name.split(" ").slice(0, 2).map((w) => w[0]).join("");
@@ -210,7 +215,7 @@ export function AccountDetail() {
               </div>
 
               <form
-                className="mt-4 flex items-center gap-2"
+                className="mt-4 flex flex-wrap items-center gap-2"
                 onSubmit={(e) => {
                   e.preventDefault();
                   submitTask();
@@ -220,7 +225,7 @@ export function AccountDetail() {
                   value={taskTitle}
                   onChange={(e) => setTaskTitle(e.target.value)}
                   placeholder="Add a follow-up…"
-                  className="flex-1"
+                  className="min-w-40 flex-1"
                 />
                 <Input
                   type="date"
@@ -229,6 +234,21 @@ export function AccountDetail() {
                   aria-label="Due date"
                   className="w-40"
                 />
+                {teamEnabled && members.length > 0 && (
+                  <Select
+                    value={taskAssignee}
+                    onChange={(e) => setTaskAssignee(e.target.value)}
+                    aria-label="Assign to"
+                    className="w-44"
+                  >
+                    <option value="">Unassigned</option>
+                    {members.map((m) => (
+                      <option key={m.user_id} value={m.email}>
+                        {m.email}
+                      </option>
+                    ))}
+                  </Select>
+                )}
                 <Button variant="subtle" type="submit" disabled={!taskTitle.trim()}>Add</Button>
               </form>
 
@@ -281,6 +301,7 @@ export function AccountDetail() {
                         {dueLabel(t)}
                       </span>
                     )}
+                    {teamEnabled && <AssigneeChip email={t.assignee} size={22} />}
                     <button
                       onClick={() => removeTask(code, t.id)}
                       aria-label="Delete task"

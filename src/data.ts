@@ -27,6 +27,7 @@ export interface Task {
   done: boolean;
   due: string; // legacy free-form label, e.g. "Fri" or "" — kept for old rows
   dueDate?: string; // ISO date "YYYY-MM-DD" when set with the date picker
+  assignee?: string; // workspace member email the task is assigned to, or unset
 }
 
 export interface Account {
@@ -121,6 +122,15 @@ export function dueLabel(task: Pick<Task, "dueDate" | "due">, now: Date = new Da
 export function dueSortKey(task: Pick<Task, "dueDate">): number {
   const d = parseDueDate(task.dueDate);
   return d ? d.getTime() : Number.MAX_SAFE_INTEGER;
+}
+
+/** Up-to-two-letter initials from an email or name, for assignee avatars.
+    "ada.lovelace@x.com" → "AL"; "bren@x.com" → "B". */
+export function initialsFor(who: string): string {
+  const local = who.split("@")[0] ?? who;
+  const parts = local.split(/[.\-_+\s]+/).filter(Boolean);
+  const letters = parts.length >= 2 ? parts[0][0] + parts[1][0] : (parts[0]?.slice(0, 1) ?? "?");
+  return letters.toUpperCase();
 }
 
 /** ISO "YYYY-MM-DD" for a date `days` from today — lets the sample tasks below
