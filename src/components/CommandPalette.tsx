@@ -70,6 +70,8 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   // Reset query + selection each time it opens; focus the input.
   useEffect(() => {
     if (!open) return;
+    // Remember the opener so focus can return to it on close.
+    const opener = document.activeElement as HTMLElement | null;
     setQuery("");
     setActive(0);
     const id = window.setTimeout(() => inputRef.current?.focus(), 0);
@@ -83,6 +85,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
       window.clearTimeout(id);
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
+      opener?.focus?.();
     };
   }, [open, onClose]);
 
