@@ -32,10 +32,10 @@ Supabase Dashboard → **Project Settings → Edge Functions → Secrets** (or
 | `FROM_EMAIL`     | a Resend-**verified** sender, e.g. `V8 CRM <reminders@yourdomain>` |
 | `APP_URL`        | optional; defaults to `https://v8crm.vercel.app`                  |
 
-Suggested `CRON_SECRET` (or generate your own):
+Generate a `CRON_SECRET` yourself (don't reuse one from anywhere public):
 
-```
-79985638454cce31d7bc5025739bae637610d1463c5e812f
+```bash
+openssl rand -hex 24
 ```
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically — do
