@@ -7,6 +7,7 @@ import { NavLink } from "react-router-dom";
 import type { ComponentType, SVGProps } from "react";
 import { useNav } from "../app/nav.tsx";
 import { useAuth } from "../store/auth.tsx";
+import { useAccounts } from "../store/accounts.tsx";
 import { BrandMark } from "./Brand.tsx";
 import {
   IconOverview,
@@ -28,30 +29,33 @@ interface NavItem {
   badge?: string;
 }
 
-const groups: { title?: string; items: NavItem[] }[] = [
-  {
-    items: [
-      { to: "/", label: "Overview", icon: IconOverview },
-      { to: "/accounts", label: "Accounts", icon: IconAccounts, badge: "6" },
-      { to: "/pipeline", label: "Pipeline", icon: IconPipeline },
-      { to: "/tasks", label: "Tasks", icon: IconTasks },
-    ],
-  },
-  {
-    title: "Insights",
-    items: [
-      { to: "/activity", label: "Activity", icon: IconActivity },
-      { to: "/reports", label: "Reports", icon: IconReports, badge: "2" },
-    ],
-  },
-  {
-    title: "System",
-    items: [
-      { to: "/styleguide", label: "Design System", icon: IconSystem },
-      { to: "/settings", label: "Settings", icon: IconSettings },
-    ],
-  },
-];
+/** Nav groups. Badges for Accounts/Tasks are live counts passed in at render. */
+function buildGroups(accountCount: number, openTasks: number): { title?: string; items: NavItem[] }[] {
+  return [
+    {
+      items: [
+        { to: "/", label: "Overview", icon: IconOverview },
+        { to: "/accounts", label: "Accounts", icon: IconAccounts, badge: accountCount ? String(accountCount) : undefined },
+        { to: "/pipeline", label: "Pipeline", icon: IconPipeline },
+        { to: "/tasks", label: "Tasks", icon: IconTasks, badge: openTasks ? String(openTasks) : undefined },
+      ],
+    },
+    {
+      title: "Insights",
+      items: [
+        { to: "/activity", label: "Activity", icon: IconActivity },
+        { to: "/reports", label: "Reports", icon: IconReports },
+      ],
+    },
+    {
+      title: "System",
+      items: [
+        { to: "/styleguide", label: "Design System", icon: IconSystem },
+        { to: "/settings", label: "Settings", icon: IconSettings },
+      ],
+    },
+  ];
+}
 
 function Item({ item }: { item: NavItem }) {
   const Icon = item.icon;
@@ -98,6 +102,9 @@ function Item({ item }: { item: NavItem }) {
 export function Sidebar() {
   const { navOpen, setNavOpen } = useNav();
   const { enabled, user, profile, signOut } = useAuth();
+  const { accounts } = useAccounts();
+  const openTasks = accounts.reduce((n, a) => n + a.tasks.filter((t) => !t.done).length, 0);
+  const groups = buildGroups(accounts.length, openTasks);
 
   // Signed in → the user's profile name (falls back to email); local demo → the
   // sample principal.
