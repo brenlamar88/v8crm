@@ -158,6 +158,21 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             })
           )}
         </div>
+
+        <div className="flex items-center gap-4 border-t border-[color:var(--v8-border)] px-4 py-2.5 text-micro text-text-muted">
+          <span className="flex items-center gap-1.5">
+            <kbd className="rounded-sm border border-[color:var(--v8-border-strong)] bg-raised px-1.5 py-0.5">↑↓</kbd>
+            move
+          </span>
+          <span className="flex items-center gap-1.5">
+            <kbd className="rounded-sm border border-[color:var(--v8-border-strong)] bg-raised px-1.5 py-0.5">↵</kbd>
+            open
+          </span>
+          <span className="flex items-center gap-1.5">
+            <kbd className="rounded-sm border border-[color:var(--v8-border-strong)] bg-raised px-1.5 py-0.5">N</kbd>
+            new account
+          </span>
+        </div>
       </div>
     </div>
   );
