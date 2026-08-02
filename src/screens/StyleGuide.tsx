@@ -7,6 +7,7 @@ import { Topbar } from "../components/Topbar.tsx";
 import { Button, Badge, SegmentedControl, Toggle } from "../components/primitives.tsx";
 import { Field, Input, Select, Textarea } from "../components/forms.tsx";
 import { Modal } from "../components/Modal.tsx";
+import { useToast } from "../components/toast.tsx";
 import { StatCard, StatCardRow } from "../components/StatCard.tsx";
 import { Sparkline } from "../components/Sparkline.tsx";
 import { AccountsTable } from "../components/AccountsTable.tsx";
@@ -78,6 +79,7 @@ export function StyleGuide() {
   const [range, setRange] = useState("1D");
   const [demoRange, setDemoRange] = useState("1D");
   const [demoOpen, setDemoOpen] = useState(false);
+  const toast = useToast();
 
   return (
     <>
@@ -158,6 +160,12 @@ export function StyleGuide() {
                 </div>
               </div>
             </div>
+            <p className="mt-4 text-body-sm text-text-muted">
+              Because every surface reads from these variables, the whole console re-themes from one
+              place — <span className="text-text-secondary">Settings</span> ships a <span className="text-text-secondary">dark / light</span> mode
+              and six accent presets, applied by rewriting the tokens on <code className="tabular text-text-secondary">:root</code>.
+              Nothing hard-codes a color.
+            </p>
           </Section>
 
           <Section n="04" title="Spacing rhythm" desc="One unit is 4px. Layouts compose from this ladder only, so horizontal and vertical rhythm stay locked.">
@@ -181,6 +189,12 @@ export function StyleGuide() {
                   <Button variant="primary">Primary</Button>
                   <Button variant="subtle">Subtle</Button>
                   <Button variant="ghost">Ghost</Button>
+                  <Button variant="danger">Danger</Button>
+                </div>
+                <span className="eyebrow mt-2">Toasts</span>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button variant="subtle" onClick={() => toast("Changes saved")}>Success toast</Button>
+                  <Button variant="subtle" onClick={() => toast("Renewal due soon", "warn")}>Warn toast</Button>
                 </div>
                 <span className="eyebrow mt-2">Badges</span>
                 <div className="flex flex-wrap items-center gap-2">
