@@ -35,13 +35,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!supabase) return;
     let active = true;
+    // Keep the user reference STABLE across auth events. Supabase re-emits
+    // onAuthStateChange (token refresh, re-validation) with a fresh user object
+    // that carries the same id; swapping the reference each time would re-run
+    // every `[user]` effect (profile + workspace load), and their state updates
+    // re-trigger the cascade — an infinite refetch loop. Only replace state when
+    // the identity actually changes.
+    const applyUser = (next: User | null) =>
+      setUser((prev) => (prev?.id === next?.id ? prev : next));
+
     supabase.auth.getSession().then(({ data }) => {
       if (!active) return;
-      setUser(data.session?.user ?? null);
+      applyUser(data.session?.user ?? null);
       setLoading(false);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
-      setUser(session?.user ?? null);
+      applyUser(session?.user ?? null);
       if (event === "PASSWORD_RECOVERY") setRecovery(true);
     });
     return () => {

@@ -36,6 +36,9 @@ const WorkspaceContext = createContext<WorkspaceValue | null>(null);
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const { enabled, user } = useAuth();
+  // Key everything on the id (a stable string), never the user object — a fresh
+  // user reference from an auth re-emit must not re-run the loader.
+  const userId = user?.id ?? null;
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
@@ -51,17 +54,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const load = useCallback(async () => {
-    if (!enabled || !user) {
+    if (!enabled || !userId) {
       setWorkspaces([]);
       setCurrentId(null);
       setLoading(false);
       return;
     }
     await acceptInvitations();
-    let list = await fetchWorkspaces(user.id);
+    let list = await fetchWorkspaces(userId);
     if (list.length === 0) {
       await rpcCreateWorkspace("My Workspace");
-      list = await fetchWorkspaces(user.id);
+      list = await fetchWorkspaces(userId);
     }
     setWorkspaces(list);
     const saved = (() => {
@@ -74,12 +77,12 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     const pick = list.find((w) => w.id === saved) ?? list[0] ?? null;
     setCurrentId(pick?.id ?? null);
     setLoading(false);
-  }, [enabled, user]);
+  }, [enabled, userId]);
 
   useEffect(() => {
-    setLoading(enabled && !!user);
+    setLoading(enabled && !!userId);
     void load();
-  }, [load, enabled, user]);
+  }, [load, enabled, userId]);
 
   const refreshMembers = useCallback(async () => {
     if (!enabled || !currentId) {
@@ -98,11 +101,11 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const createWorkspace = useCallback(
     async (name: string) => {
       const id = await rpcCreateWorkspace(name);
-      const list = user ? await fetchWorkspaces(user.id) : [];
+      const list = userId ? await fetchWorkspaces(userId) : [];
       setWorkspaces(list);
       if (id) setCurrent(id);
     },
-    [user, setCurrent],
+    [userId, setCurrent],
   );
 
   const rename = useCallback(
