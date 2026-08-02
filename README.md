@@ -5,13 +5,24 @@ engagements V8 delivers for operators in behavioral health, nonprofits, and
 field operations.
 
 It's built on a token-driven design system — every color, size, and motion
-value lives in one place — with real, interactive application screens on top:
-an **Overview** home, an **Accounts** workspace, an **account record** view, a
-**Pipeline** board, an **Activity** feed, and a living **Design System** style
-guide. The console captures data too — creating an account and logging activity
-run through token-styled forms and a dialog, backed by a light client-side store
-that **persists to localStorage**, so your book survives a refresh. The one
-remaining destination (Reports) is stubbed with an honest empty state.
+value lives in one place — with a full, interactive application on top:
+
+- **Overview** — KPI band, revenue panel, pipeline-by-stage, needs-attention list
+- **Accounts** — filterable workspace over the whole book
+- **Account record** — identity header, KPIs, engagement chart, activity
+  timeline, contacts; fully **editable** and **deletable**
+- **Pipeline** — a stage-column board with account cards
+- **Activity** — one recency-sorted feed of every touch, filterable by kind
+- **Reports** — rollups by vertical and stage, with **CSV export**
+- **Settings** — profile, a demo-data reset, and a **live accent theming** picker
+  that re-colors the entire console
+- **Design System** — a living style guide documenting the language
+
+The console captures data, not just displays it: create / edit / delete accounts
+and log activity through token-styled forms, dialogs, and toast confirmations,
+backed by a light client-side store that **persists to localStorage**. A global
+**⌘K command palette** and topbar search jump to any screen or account, and the
+shell is **responsive** — the sidebar becomes a drawer on mobile.
 
 ## What informs the look
 
@@ -37,15 +48,17 @@ showcase is a documentation layout of its own.
 | Tokens | `src/styles/tokens.css` | Single source of truth — every color, size, duration as a CSS variable. Retheme here. |
 | Bridge | `tailwind.config.js` | Maps tokens to Tailwind utilities + motion keyframes. No off-system values allowed. |
 | Base | `src/index.css` | Resets, the `.eyebrow` / `.panel` / `.tabular` helpers, focus + scrollbar styling. |
-| Primitives | `src/components/*` | `Button`, `Badge`, `TrendPill`, `SegmentedControl`, `Toggle`, `StatCard`, `Sparkline`, `Timeline`, `AccountsTable`, `Sidebar`, `Topbar`, plus `forms` (`Field`/`Input`/`Select`/`Textarea`) and `Modal`. |
-| Store | `src/store/accounts.tsx` | Client-side accounts state + mutations (create account, log activity), the global New-account dialog, and localStorage persistence (versioned; falls back to seed). |
-| Shell | `src/app/AppShell.tsx` | Sidebar + scrolling main; hosts the global dialog. |
-| Screens | `src/screens/*` | `Overview`, `AccountsScreen`, `AccountDetail`, `Pipeline`, `Activity`, `StyleGuide`, `Placeholder`. |
-| Router | `src/App.tsx` | `/` Overview, `/accounts`, `/accounts/:code`, `/pipeline`, `/activity`, `/styleguide`, Reports/Settings stubbed. |
+| Primitives | `src/components/*` | `Button`, `Badge`, `TrendPill`, `SegmentedControl`, `Toggle`, `StatCard`, `Sparkline`, `Timeline`, `AccountsTable`, `Sidebar`, `Topbar`, `SearchBox`, `CommandPalette`, `Modal`, `forms` (`Field`/`Input`/`Select`/`Textarea`), `toast`, and the `New`/`Edit` account dialogs. |
+| Store | `src/store/accounts.tsx` | Accounts state + mutations (add / update / remove / log activity), the global New-account dialog, and versioned localStorage persistence (falls back to seed). |
+| Libs | `src/lib/*` | `export.ts` (CSV), `theme.ts` (accent presets + live re-theming). |
+| Shell | `src/app/*` | `AppShell` (responsive sidebar + main, ⌘K palette, global dialogs) and `nav` (mobile-drawer context). |
+| Screens | `src/screens/*` | `Overview`, `AccountsScreen`, `AccountDetail`, `Pipeline`, `Activity`, `Reports`, `Settings`, `StyleGuide`, `Placeholder`. |
+| Router | `src/App.tsx` | `/`, `/accounts`, `/accounts/:code`, `/pipeline`, `/activity`, `/reports`, `/settings`, `/styleguide`. Wraps everything in the toast + accounts providers. |
 
 **The rule:** components never hard-code a color, size, radius, or duration.
-They read token utilities only, so restyling the whole CRM means editing
-`tokens.css` once.
+They read token utilities only, so restyling the whole CRM — or re-theming it
+live from Settings — means changing `tokens.css` (or the `--v8-accent-*`
+variables) in one place.
 
 ## Run it
 
