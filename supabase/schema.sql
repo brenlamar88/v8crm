@@ -200,6 +200,34 @@ create policy "ws accounts delete" on public.accounts for delete to authenticate
 -- changes to rows its SELECT policy permits.
 alter publication supabase_realtime add table public.accounts;
 
+-- ── Time entries (utilization & realization) ─────────────────────────────────
+-- Logged hours, workspace-scoped with membership RLS. account_code null/'' =
+-- internal / non-billable; written_off = billable hours that won't be invoiced.
+create table if not exists public.time_entries (
+  id           uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references public.workspaces (id) on delete cascade,
+  entry_date   date not null default current_date,
+  account_code text,
+  user_email   text,
+  hours        numeric(6,2) not null default 0,
+  billable     boolean not null default true,
+  written_off  boolean not null default false,
+  note         text not null default '',
+  created_by   uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists time_entries_ws_date_idx on public.time_entries (workspace_id, entry_date);
+
+alter table public.time_entries enable row level security;
+
+create policy "time read"   on public.time_entries for select to authenticated using (is_member(workspace_id));
+create policy "time insert" on public.time_entries for insert to authenticated with check (is_member(workspace_id));
+create policy "time update" on public.time_entries for update to authenticated using (is_member(workspace_id)) with check (is_member(workspace_id));
+create policy "time delete" on public.time_entries for delete to authenticated using (is_member(workspace_id));
+
+alter publication supabase_realtime add table public.time_entries;
+
 -- ── Overdue-task digest (email reminders) ────────────────────────────────────
 -- Returns open, assigned, past-due tasks across every workspace, one row per
 -- (assignee, task). Read by the `overdue-reminders` Edge Function with the

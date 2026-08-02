@@ -54,6 +54,12 @@ export const IconTasks = (p: IconProps) => (
     <path d="M4 6l2 2 3-3M4 13l2 2 3-3M4 19l2 2 3-3M13 6h7M13 13h7M13 19h7" />
   </Base>
 );
+export const IconTime = (p: IconProps) => (
+  <Base {...p}>
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 7v5l3 2" />
+  </Base>
+);
 export const IconReports = (p: IconProps) => (
   <Base {...p}>
     <path d="M6 3h9l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />

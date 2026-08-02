@@ -6,6 +6,7 @@
 import type { ReactNode } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AccountsProvider } from "./store/accounts.tsx";
+import { TimeProvider } from "./store/time.tsx";
 import { WorkspaceProvider, useWorkspace } from "./store/workspace.tsx";
 import { AuthProvider, useAuth } from "./store/auth.tsx";
 import { ToastProvider } from "./components/toast.tsx";
@@ -18,6 +19,7 @@ import { AccountsScreen } from "./screens/AccountsScreen.tsx";
 import { AccountDetail } from "./screens/AccountDetail.tsx";
 import { Pipeline } from "./screens/Pipeline.tsx";
 import { Tasks } from "./screens/Tasks.tsx";
+import { Time } from "./screens/Time.tsx";
 import { Activity } from "./screens/Activity.tsx";
 import { Reports } from "./screens/Reports.tsx";
 import { Settings } from "./screens/Settings.tsx";
@@ -47,23 +49,26 @@ function ConsoleRoutes() {
     <WorkspaceProvider>
       <WorkspaceBoundary>
         <AccountsProvider>
-          <Routes>
-            <Route element={<AppShell />}>
-              <Route index element={<Overview />} />
-              <Route path="accounts" element={<AccountsScreen />} />
-              <Route path="accounts/:code" element={<AccountDetail />} />
-              <Route path="pipeline" element={<Pipeline />} />
-              <Route path="tasks" element={<Tasks />} />
-              <Route path="activity" element={<Activity />} />
-              <Route path="reports" element={<Reports />} />
-              <Route path="settings" element={<Settings />} />
-              <Route path="styleguide" element={<StyleGuide />} />
-              <Route
-                path="*"
-                element={<Placeholder title="Not found" note="That route doesn't exist yet." />}
-              />
-            </Route>
-          </Routes>
+          <TimeProvider>
+            <Routes>
+              <Route element={<AppShell />}>
+                <Route index element={<Overview />} />
+                <Route path="accounts" element={<AccountsScreen />} />
+                <Route path="accounts/:code" element={<AccountDetail />} />
+                <Route path="pipeline" element={<Pipeline />} />
+                <Route path="tasks" element={<Tasks />} />
+                <Route path="time" element={<Time />} />
+                <Route path="activity" element={<Activity />} />
+                <Route path="reports" element={<Reports />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="styleguide" element={<StyleGuide />} />
+                <Route
+                  path="*"
+                  element={<Placeholder title="Not found" note="That route doesn't exist yet." />}
+                />
+              </Route>
+            </Routes>
+          </TimeProvider>
         </AccountsProvider>
       </WorkspaceBoundary>
     </WorkspaceProvider>

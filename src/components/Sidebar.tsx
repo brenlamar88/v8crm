@@ -16,6 +16,7 @@ import {
   IconPipeline,
   IconActivity,
   IconTasks,
+  IconTime,
   IconReports,
   IconSystem,
   IconSettings,
@@ -39,6 +40,7 @@ function buildGroups(accountCount: number, openTasks: number): { title?: string;
         { to: "/accounts", label: "Accounts", icon: IconAccounts, badge: accountCount ? String(accountCount) : undefined },
         { to: "/pipeline", label: "Pipeline", icon: IconPipeline },
         { to: "/tasks", label: "Tasks", icon: IconTasks, badge: openTasks ? String(openTasks) : undefined },
+        { to: "/time", label: "Time", icon: IconTime },
       ],
     },
     {

@@ -357,3 +357,111 @@ export async function revokeInvitation(id: string): Promise<void> {
   const { error } = await supabase.from("invitations").delete().eq("id", id);
   if (error) console.warn("[supabase] revokeInvitation:", error.message);
 }
+
+/* --- Time entries --------------------------------------------------------- */
+
+export interface TimeEntry {
+  id: string;
+  date: string; // ISO "YYYY-MM-DD"
+  accountCode: string; // "" = internal / non-billable
+  userEmail: string;
+  hours: number;
+  billable: boolean;
+  writtenOff: boolean; // billable, but won't be invoiced (drives realization)
+  note: string;
+}
+
+interface TimeEntryRow {
+  id: string;
+  entry_date: string;
+  account_code: string | null;
+  user_email: string | null;
+  hours: number;
+  billable: boolean;
+  written_off: boolean;
+  note: string;
+}
+
+function timeFromRow(r: TimeEntryRow): TimeEntry {
+  return {
+    id: r.id,
+    date: r.entry_date,
+    accountCode: r.account_code ?? "",
+    userEmail: r.user_email ?? "",
+    hours: Number(r.hours) || 0,
+    billable: r.billable,
+    writtenOff: r.written_off,
+    note: r.note ?? "",
+  };
+}
+
+const TIME = "time_entries";
+
+/** Fetch a workspace's time entries (newest first). Null on failure. */
+export async function fetchTimeEntries(workspaceId: string): Promise<TimeEntry[] | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from(TIME)
+    .select("id, entry_date, account_code, user_email, hours, billable, written_off, note")
+    .eq("workspace_id", workspaceId)
+    .order("entry_date", { ascending: false });
+  if (error) {
+    console.warn("[supabase] time fetch failed:", error.message);
+    return null;
+  }
+  return (data as TimeEntryRow[]).map(timeFromRow);
+}
+
+/** Insert or update one time entry. */
+export async function upsertTimeEntry(entry: TimeEntry, workspaceId: string): Promise<boolean> {
+  if (!supabase) return true;
+  const { error } = await supabase.from(TIME).upsert({
+    id: entry.id,
+    workspace_id: workspaceId,
+    entry_date: entry.date,
+    account_code: entry.accountCode || null,
+    user_email: entry.userEmail || null,
+    hours: entry.hours,
+    billable: entry.billable,
+    written_off: entry.writtenOff,
+    note: entry.note,
+  });
+  if (error) console.warn("[supabase] time upsert failed:", error.message);
+  return !error;
+}
+
+export async function deleteTimeEntryRow(id: string, workspaceId: string): Promise<boolean> {
+  if (!supabase) return true;
+  const { error } = await supabase.from(TIME).delete().eq("workspace_id", workspaceId).eq("id", id);
+  if (error) console.warn("[supabase] time delete failed:", error.message);
+  return !error;
+}
+
+export type TimeChange =
+  | { type: "upsert"; entry: TimeEntry }
+  | { type: "delete"; id: string };
+
+export function subscribeToTimeEntries(
+  workspaceId: string,
+  onChange: (change: TimeChange) => void,
+): () => void {
+  if (!supabase) return () => {};
+  const channel = supabase
+    .channel(`time-${workspaceId}`)
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: TIME, filter: `workspace_id=eq.${workspaceId}` },
+      (payload) => {
+        if (payload.eventType === "DELETE") {
+          const id = (payload.old as Partial<TimeEntryRow>).id;
+          if (id) onChange({ type: "delete", id });
+        } else {
+          onChange({ type: "upsert", entry: timeFromRow(payload.new as TimeEntryRow) });
+        }
+      },
+    )
+    .subscribe();
+  return () => {
+    void supabase?.removeChannel(channel);
+  };
+}
