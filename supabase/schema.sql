@@ -70,6 +70,7 @@ create table if not exists public.profiles (
   name       text not null default '',
   role       text not null default '',
   workspace  text not null default '',
+  avatar_url text not null default '',
   updated_at timestamptz not null default now()
 );
 
@@ -90,3 +91,28 @@ create policy "own profile insert"
 create policy "own profile update"
   on public.profiles for update to authenticated
   using (id = auth.uid()) with check (id = auth.uid());
+
+-- Avatars (Supabase Storage) -------------------------------------------------
+-- A public bucket; files live under a folder named after the user's uid.
+insert into storage.buckets (id, name, public)
+values ('avatars', 'avatars', true)
+on conflict (id) do nothing;
+
+-- Public buckets serve object URLs without a SELECT policy, so we grant only
+-- owner writes (no listing — avoids exposing every file). Reads happen via the
+-- public URL.
+drop policy if exists "avatar owner insert" on storage.objects;
+drop policy if exists "avatar owner update" on storage.objects;
+drop policy if exists "avatar owner delete" on storage.objects;
+
+create policy "avatar owner insert"
+  on storage.objects for insert to authenticated
+  with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "avatar owner update"
+  on storage.objects for update to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);
+
+create policy "avatar owner delete"
+  on storage.objects for delete to authenticated
+  using (bucket_id = 'avatars' and (storage.foldername(name))[1] = auth.uid()::text);

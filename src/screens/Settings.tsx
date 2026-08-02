@@ -8,9 +8,10 @@ import { Topbar } from "../components/Topbar.tsx";
 import { Button, Badge } from "../components/primitives.tsx";
 import { Field, Input } from "../components/forms.tsx";
 import { ACCENTS, applyAccent, applyMode, getSavedAccent, getSavedMode, type Mode } from "../lib/theme.ts";
-import { isSupabaseEnabled } from "../lib/supabase.ts";
+import { isSupabaseEnabled, uploadAvatar } from "../lib/supabase.ts";
 import { useAuth } from "../store/auth.tsx";
 import { useToast } from "../components/toast.tsx";
+import { useRef } from "react";
 
 function Card({ title, desc, children }: { title: string; desc: string; children: React.ReactNode }) {
   return (
@@ -31,6 +32,9 @@ export function Settings() {
   const [pName, setPName] = useState("");
   const [pRole, setPRole] = useState("");
   const [pWorkspace, setPWorkspace] = useState("");
+  const [pAvatar, setPAvatar] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   // Seed the profile form from the loaded profile (local demo uses the sample).
   useEffect(() => {
@@ -38,10 +42,12 @@ export function Settings() {
       setPName(profile.name);
       setPRole(profile.role);
       setPWorkspace(profile.workspace);
+      setPAvatar(profile.avatarUrl);
     } else if (!enabled) {
       setPName("Bren Roberts");
       setPRole("Principal");
       setPWorkspace("V8 Technologies");
+      setPAvatar("");
     }
   }, [enabled, profile]);
 
@@ -56,8 +62,23 @@ export function Settings() {
   }
 
   async function saveProfileForm() {
-    await saveProfile({ name: pName.trim(), role: pRole.trim(), workspace: pWorkspace.trim() });
+    await saveProfile({ name: pName.trim(), role: pRole.trim(), workspace: pWorkspace.trim(), avatarUrl: pAvatar });
     toast("Profile saved");
+  }
+
+  async function onPickAvatar(file: File | undefined) {
+    if (!file || !user) return;
+    setUploading(true);
+    const url = await uploadAvatar(user.id, file);
+    setUploading(false);
+    if (!url) {
+      toast("Avatar upload failed", "warn");
+      return;
+    }
+    setPAvatar(url);
+    // Persist immediately so the avatar sticks even without a full profile save.
+    await saveProfile({ name: pName.trim(), role: pRole.trim(), workspace: pWorkspace.trim(), avatarUrl: url });
+    toast("Avatar updated");
   }
 
   function resetData() {
@@ -122,6 +143,34 @@ export function Settings() {
           </Card>
 
           <Card title="Profile" desc="How you appear across the console.">
+            <div className="mb-5 flex items-center gap-4">
+              <span className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-full bg-accent-600 text-h3 font-bold">
+                {pAvatar ? (
+                  <img src={pAvatar} alt="Avatar" className="h-full w-full object-cover" />
+                ) : (
+                  (pName.trim()[0] ?? "?").toUpperCase()
+                )}
+              </span>
+              <div className="flex flex-col gap-1">
+                <input
+                  ref={fileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => onPickAvatar(e.target.files?.[0])}
+                />
+                <Button
+                  variant="subtle"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={!enabled || uploading}
+                >
+                  {uploading ? "Uploading…" : "Upload photo"}
+                </Button>
+                <span className="text-label text-text-muted">
+                  {enabled ? "PNG or JPG, square looks best." : "Sign in with Supabase to upload."}
+                </span>
+              </div>
+            </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Name">
                 <Input value={pName} onChange={(e) => setPName(e.target.value)} placeholder="Your name" />

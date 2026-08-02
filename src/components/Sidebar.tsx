@@ -151,8 +151,12 @@ export function Sidebar() {
 
       <div className="border-t border-[color:var(--v8-border)] p-3">
         <div className="flex items-center gap-3 rounded-md px-3 h-12 hover:bg-raised transition-colors duration-fast">
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent-600 text-label font-bold">
-            {initials}
+          <span className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-accent-600 text-label font-bold">
+            {enabled && profile?.avatarUrl ? (
+              <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
+            ) : (
+              initials
+            )}
           </span>
           <div className="min-w-0 flex-1 leading-tight">
             <div className="truncate text-body-sm font-semibold">{primaryName}</div>

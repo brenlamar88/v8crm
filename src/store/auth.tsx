@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let active = true;
     fetchProfile(user.id).then((p) => {
       if (!active) return;
-      setProfile(p ?? { name: user.email?.split("@")[0] ?? "", role: "", workspace: "" });
+      setProfile(p ?? { name: user.email?.split("@")[0] ?? "", role: "", workspace: "", avatarUrl: "" });
     });
     return () => {
       active = false;

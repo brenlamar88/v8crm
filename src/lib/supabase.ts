@@ -22,6 +22,14 @@ export interface Profile {
   name: string;
   role: string;
   workspace: string;
+  avatarUrl: string;
+}
+
+interface ProfileRow {
+  name: string;
+  role: string;
+  workspace: string;
+  avatar_url: string;
 }
 
 /** Fetch the signed-in user's profile row, or null if none/failure. */
@@ -29,23 +37,48 @@ export async function fetchProfile(userId: string): Promise<Profile | null> {
   if (!supabase) return null;
   const { data, error } = await supabase
     .from(PROFILES)
-    .select("name, role, workspace")
+    .select("name, role, workspace, avatar_url")
     .eq("id", userId)
     .maybeSingle();
   if (error) {
     console.warn("[supabase] profile fetch failed:", error.message);
     return null;
   }
-  return data as Profile | null;
+  if (!data) return null;
+  const r = data as ProfileRow;
+  return { name: r.name, role: r.role, workspace: r.workspace, avatarUrl: r.avatar_url ?? "" };
 }
 
 /** Insert or update the signed-in user's profile. Best-effort. */
 export async function upsertProfile(userId: string, profile: Profile): Promise<void> {
   if (!supabase) return;
-  const { error } = await supabase
-    .from(PROFILES)
-    .upsert({ id: userId, ...profile, updated_at: new Date().toISOString() });
+  const { error } = await supabase.from(PROFILES).upsert({
+    id: userId,
+    name: profile.name,
+    role: profile.role,
+    workspace: profile.workspace,
+    avatar_url: profile.avatarUrl,
+    updated_at: new Date().toISOString(),
+  });
   if (error) console.warn("[supabase] profile upsert failed:", error.message);
+}
+
+/** Upload an avatar image under the user's own path and return its public URL,
+    or null on failure. */
+export async function uploadAvatar(userId: string, file: File): Promise<string | null> {
+  if (!supabase) return null;
+  const ext = (file.name.split(".").pop() || "png").toLowerCase();
+  const path = `${userId}/avatar.${ext}`;
+  const { error } = await supabase.storage
+    .from("avatars")
+    .upload(path, file, { upsert: true, contentType: file.type });
+  if (error) {
+    console.warn("[supabase] avatar upload failed:", error.message);
+    return null;
+  }
+  const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+  // Cache-bust so a re-upload to the same path refreshes in the UI.
+  return `${data.publicUrl}?t=${Date.now()}`;
 }
 
 /* Row shape mirrors the SQL schema (see supabase/schema.sql): scalar columns
