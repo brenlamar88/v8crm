@@ -21,6 +21,13 @@ export interface Contact {
   email: string;
 }
 
+export interface Task {
+  id: string;
+  title: string;
+  done: boolean;
+  due: string; // free-form, e.g. "Fri" or "" — kept simple like the other fields
+}
+
 export interface Account {
   name: string;
   code: string;
@@ -37,6 +44,7 @@ export interface Account {
   nextStep: string;
   contacts: Contact[];
   timeline: TimelineEvent[];
+  tasks: Task[];
 }
 
 /** Look up a single account by its code (used by the detail route). */
@@ -90,6 +98,10 @@ export const accounts: Account[] = [
       { when: "1w ago", kind: "call", text: "Monthly ops review — flagged appetite for reporting module." },
       { when: "3w ago", kind: "email", text: "Sent Q3 roadmap draft for sign-off." },
     ],
+    tasks: [
+      { id: "t-2041-1", title: "Scope the incident-reporting module", done: false, due: "This week" },
+      { id: "t-2041-2", title: "Send Q3 roadmap for sign-off", done: true, due: "" },
+    ],
   },
   {
     name: "Bayou Recovery Partners",
@@ -111,6 +123,7 @@ export const accounts: Account[] = [
       { when: "4d ago", kind: "ship", text: "Intake form flows passed QA." },
       { when: "2w ago", kind: "call", text: "Kickoff for build phase 2." },
     ],
+    tasks: [],
   },
   {
     name: "Acadiana Services Group",
@@ -131,6 +144,7 @@ export const accounts: Account[] = [
       { when: "3d ago", kind: "email", text: "Answered pricing questions on the dispatch proposal." },
       { when: "1w ago", kind: "call", text: "Scoping call — walked through current spreadsheet process." },
     ],
+    tasks: [],
   },
   {
     name: "Delta Wildlife Association",
@@ -151,6 +165,7 @@ export const accounts: Account[] = [
       { when: "5d ago", kind: "note", text: "Renewal window opens next month — prep packet." },
       { when: "3w ago", kind: "ship", text: "Deployed event registration improvements." },
     ],
+    tasks: [],
   },
   {
     name: "Gulf Coast Care Collective",
@@ -172,6 +187,10 @@ export const accounts: Account[] = [
       { when: "2w ago", kind: "email", text: "No reply on last two check-in emails." },
       { when: "5w ago", kind: "note", text: "Champion (former ops lead) departed the org." },
     ],
+    tasks: [
+      { id: "t-2024-1", title: "Book an exec check-in", done: false, due: "Mon" },
+      { id: "t-2024-2", title: "Draft a save plan before renewal", done: false, due: "" },
+    ],
   },
   {
     name: "Teche Logistics Co.",
@@ -192,6 +211,7 @@ export const accounts: Account[] = [
       { when: "6d ago", kind: "call", text: "Intro call — outlined routing pain points." },
       { when: "2w ago", kind: "note", text: "Inbound from referral; qualified as a fit." },
     ],
+    tasks: [],
   },
 ];
 

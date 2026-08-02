@@ -5,7 +5,7 @@
    or a call fails, callers fall back to the local store so the app never breaks.
    -------------------------------------------------------------------------- */
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Account, Contact, TimelineEvent } from "../data.ts";
+import type { Account, Contact, Task, TimelineEvent } from "../data.ts";
 
 /* Public client credentials for this project's Supabase. The anon key is meant
    to be shipped to browsers — it already appears in the built bundle — and the
@@ -18,11 +18,15 @@ const FALLBACK_URL = "https://jqcobwrrjwybrcvtjqxa.supabase.co";
 const FALLBACK_ANON_KEY =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxY29id3Jyand5YnJjdnRqcXhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2NjMzMDEsImV4cCI6MjEwMTIzOTMwMX0.KsSJQpjdG0rKyQjkx_QyobpYT3x-OcEPiOlvvdacEPg";
 
+// Set VITE_SUPABASE_DISABLE=1 at build time to force local/offline mode (no
+// backend, no sign-in) — useful for demos and for building without network.
+const disabled = (import.meta.env.VITE_SUPABASE_DISABLE as string) === "1";
+
 const url = (import.meta.env.VITE_SUPABASE_URL as string) || FALLBACK_URL;
 const anonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || FALLBACK_ANON_KEY;
 
 export const supabase: SupabaseClient | null =
-  url && anonKey ? createClient(url, anonKey) : null;
+  !disabled && url && anonKey ? createClient(url, anonKey) : null;
 
 export const isSupabaseEnabled = Boolean(supabase);
 
@@ -109,6 +113,7 @@ interface AccountRow {
   next_step: string;
   contacts: Contact[];
   timeline: TimelineEvent[];
+  tasks: Task[];
 }
 
 function toRow(a: Account): AccountRow {
@@ -127,6 +132,7 @@ function toRow(a: Account): AccountRow {
     next_step: a.nextStep,
     contacts: a.contacts,
     timeline: a.timeline,
+    tasks: a.tasks,
   };
 }
 
@@ -146,6 +152,7 @@ function fromRow(r: AccountRow): Account {
     nextStep: r.next_step ?? "",
     contacts: r.contacts ?? [],
     timeline: r.timeline ?? [],
+    tasks: r.tasks ?? [],
   };
 }
 

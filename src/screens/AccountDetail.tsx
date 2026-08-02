@@ -54,7 +54,7 @@ const ACTIVITY_KINDS: TimelineKind[] = ["note", "call", "email", "ship", "risk"]
 
 export function AccountDetail() {
   const { code = "" } = useParams();
-  const { getAccount, logActivity, removeAccount, addContact } = useAccounts();
+  const { getAccount, logActivity, removeAccount, addContact, addTask, toggleTask, removeTask } = useAccounts();
   const toast = useToast();
   const navigate = useNavigate();
   const account: Account | undefined = getAccount(code);
@@ -68,6 +68,8 @@ export function AccountDetail() {
   const [cName, setCName] = useState("");
   const [cRole, setCRole] = useState("");
   const [cEmail, setCEmail] = useState("");
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskDue, setTaskDue] = useState("");
 
   if (!account) {
     return (
@@ -106,6 +108,14 @@ export function AccountDetail() {
     setCEmail("");
     setContactOpen(false);
     toast("Contact added");
+  }
+
+  function submitTask() {
+    const title = taskTitle.trim();
+    if (!title) return;
+    addTask(code, title, taskDue.trim());
+    setTaskTitle("");
+    setTaskDue("");
   }
 
   const initials = account.name.split(" ").slice(0, 2).map((w) => w[0]).join("");
@@ -189,7 +199,89 @@ export function AccountDetail() {
               </div>
             </div>
 
-            <div className="panel p-6 animate-fade-rise" style={{ animationDelay: "140ms" }}>
+            <div className="panel p-6 animate-fade-rise" style={{ animationDelay: "120ms" }}>
+              <div className="flex items-center justify-between">
+                <h3 className="text-h3 font-semibold">Tasks</h3>
+                {account.tasks.some((t) => !t.done) && (
+                  <Badge tone="accent" dot={false}>
+                    {account.tasks.filter((t) => !t.done).length} open
+                  </Badge>
+                )}
+              </div>
+
+              <form
+                className="mt-4 flex items-center gap-2"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  submitTask();
+                }}
+              >
+                <Input
+                  value={taskTitle}
+                  onChange={(e) => setTaskTitle(e.target.value)}
+                  placeholder="Add a follow-up…"
+                  className="flex-1"
+                />
+                <Input
+                  value={taskDue}
+                  onChange={(e) => setTaskDue(e.target.value)}
+                  placeholder="Due"
+                  className="w-24"
+                />
+                <Button variant="subtle" type="submit" disabled={!taskTitle.trim()}>Add</Button>
+              </form>
+
+              <ul className="mt-4 flex flex-col">
+                {account.tasks.length === 0 && (
+                  <li className="py-2 text-body-sm text-text-muted">No tasks yet.</li>
+                )}
+                {account.tasks.map((t) => (
+                  <li
+                    key={t.id}
+                    className="group flex items-center gap-3 border-b border-[color:var(--v8-border)] py-3 last:border-0"
+                  >
+                    <button
+                      onClick={() => toggleTask(code, t.id)}
+                      aria-label={t.done ? "Mark incomplete" : "Mark complete"}
+                      className={[
+                        "grid h-5 w-5 shrink-0 place-items-center rounded-sm border transition-colors duration-fast",
+                        t.done
+                          ? "border-[color:var(--v8-accent-500)] bg-accent-500 text-base"
+                          : "border-[color:var(--v8-border-strong)] hover:border-accent",
+                      ].join(" ")}
+                    >
+                      {t.done && (
+                        <svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                          <path d="M4 10.5l4 4 8-9" />
+                        </svg>
+                      )}
+                    </button>
+                    <span
+                      className={[
+                        "flex-1 text-body",
+                        t.done ? "text-text-muted line-through" : "text-text",
+                      ].join(" ")}
+                    >
+                      {t.title}
+                    </span>
+                    {t.due && (
+                      <span className="tabular shrink-0 text-label text-text-muted">{t.due}</span>
+                    )}
+                    <button
+                      onClick={() => removeTask(code, t.id)}
+                      aria-label="Delete task"
+                      className="shrink-0 text-text-faint opacity-0 transition-opacity duration-fast hover:text-down group-hover:opacity-100"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden>
+                        <path d="M6 6l12 12M18 6L6 18" />
+                      </svg>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="panel p-6 animate-fade-rise" style={{ animationDelay: "160ms" }}>
               <h3 className="text-h3 font-semibold">Activity</h3>
               <p className="text-body-sm text-text-muted mb-5">Recent touches on this account</p>
               <Timeline events={account.timeline} />

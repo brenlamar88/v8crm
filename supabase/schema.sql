@@ -27,6 +27,7 @@ create table public.accounts (
   next_step   text not null default '',
   contacts    jsonb not null default '[]'::jsonb,
   timeline    jsonb not null default '[]'::jsonb,
+  tasks       jsonb not null default '[]'::jsonb,
   created_at  timestamptz not null default now(),
   primary key (owner_id, code)
 );

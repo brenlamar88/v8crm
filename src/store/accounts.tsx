@@ -65,6 +65,9 @@ interface AccountsContextValue {
   updateAccount: (code: string, patch: Partial<Account>) => void;
   removeAccount: (code: string) => void;
   addContact: (code: string, contact: Contact) => void;
+  addTask: (code: string, title: string, due: string) => void;
+  toggleTask: (code: string, taskId: string) => void;
+  removeTask: (code: string, taskId: string) => void;
   logActivity: (code: string, event: TimelineEvent) => void;
   newAccountOpen: boolean;
   openNewAccount: () => void;
@@ -152,6 +155,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
         nextStep: "Set up the kickoff and confirm scope.",
         contacts: [],
         timeline: [{ when: "just now", kind: "note", text: "Account created." }],
+        tasks: [],
       };
       setAccounts([created, ...accounts]);
       void upsertAccount(created);
@@ -190,6 +194,48 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
     [accounts],
   );
 
+  const writeTasks = useCallback(
+    (code: string, tasks: Account["tasks"]) => {
+      const current = accounts.find((a) => a.code === code);
+      if (!current) return;
+      const merged = { ...current, tasks };
+      setAccounts(accounts.map((a) => (a.code === code ? merged : a)));
+      void upsertAccount(merged);
+    },
+    [accounts],
+  );
+
+  const addTask = useCallback(
+    (code: string, title: string, due: string) => {
+      const current = accounts.find((a) => a.code === code);
+      if (!current) return;
+      const id = `t-${code}-${current.tasks.length}-${title.length}`;
+      writeTasks(code, [...current.tasks, { id, title, due, done: false }]);
+    },
+    [accounts, writeTasks],
+  );
+
+  const toggleTask = useCallback(
+    (code: string, taskId: string) => {
+      const current = accounts.find((a) => a.code === code);
+      if (!current) return;
+      writeTasks(
+        code,
+        current.tasks.map((t) => (t.id === taskId ? { ...t, done: !t.done } : t)),
+      );
+    },
+    [accounts, writeTasks],
+  );
+
+  const removeTask = useCallback(
+    (code: string, taskId: string) => {
+      const current = accounts.find((a) => a.code === code);
+      if (!current) return;
+      writeTasks(code, current.tasks.filter((t) => t.id !== taskId));
+    },
+    [accounts, writeTasks],
+  );
+
   const logActivity = useCallback(
     (code: string, event: TimelineEvent) => {
       const current = accounts.find((a) => a.code === code);
@@ -209,12 +255,15 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
       updateAccount,
       removeAccount,
       addContact,
+      addTask,
+      toggleTask,
+      removeTask,
       logActivity,
       newAccountOpen,
       openNewAccount: () => setNewAccountOpen(true),
       closeNewAccount: () => setNewAccountOpen(false),
     }),
-    [accounts, getAccount, addAccount, updateAccount, removeAccount, addContact, logActivity, newAccountOpen],
+    [accounts, getAccount, addAccount, updateAccount, removeAccount, addContact, addTask, toggleTask, removeTask, logActivity, newAccountOpen],
   );
 
   return <AccountsContext.Provider value={value}>{children}</AccountsContext.Provider>;
