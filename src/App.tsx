@@ -15,6 +15,7 @@ import { Overview } from "./screens/Overview.tsx";
 import { AccountsScreen } from "./screens/AccountsScreen.tsx";
 import { AccountDetail } from "./screens/AccountDetail.tsx";
 import { Pipeline } from "./screens/Pipeline.tsx";
+import { Tasks } from "./screens/Tasks.tsx";
 import { Activity } from "./screens/Activity.tsx";
 import { Reports } from "./screens/Reports.tsx";
 import { Settings } from "./screens/Settings.tsx";
@@ -30,6 +31,7 @@ function ConsoleRoutes() {
           <Route path="accounts" element={<AccountsScreen />} />
           <Route path="accounts/:code" element={<AccountDetail />} />
           <Route path="pipeline" element={<Pipeline />} />
+          <Route path="tasks" element={<Tasks />} />
           <Route path="activity" element={<Activity />} />
           <Route path="reports" element={<Reports />} />
           <Route path="settings" element={<Settings />} />

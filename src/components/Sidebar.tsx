@@ -13,6 +13,7 @@ import {
   IconAccounts,
   IconPipeline,
   IconActivity,
+  IconTasks,
   IconReports,
   IconSystem,
   IconSettings,
@@ -33,6 +34,7 @@ const groups: { title?: string; items: NavItem[] }[] = [
       { to: "/", label: "Overview", icon: IconOverview },
       { to: "/accounts", label: "Accounts", icon: IconAccounts, badge: "6" },
       { to: "/pipeline", label: "Pipeline", icon: IconPipeline },
+      { to: "/tasks", label: "Tasks", icon: IconTasks },
     ],
   },
   {
