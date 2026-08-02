@@ -5,6 +5,7 @@
    -------------------------------------------------------------------------- */
 import { NavLink } from "react-router-dom";
 import type { ComponentType, SVGProps } from "react";
+import { useNav } from "../app/nav.tsx";
 import { BrandMark } from "./Brand.tsx";
 import {
   IconOverview,
@@ -92,8 +93,25 @@ function Item({ item }: { item: NavItem }) {
 }
 
 export function Sidebar() {
+  const { navOpen, setNavOpen } = useNav();
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-[color:var(--v8-border)] bg-surface">
+    <>
+      {/* Scrim behind the mobile drawer. */}
+      {navOpen && (
+        <button
+          aria-label="Close navigation"
+          onClick={() => setNavOpen(false)}
+          className="fixed inset-0 z-40 bg-[color:var(--v8-scrim)] backdrop-blur-sm lg:hidden animate-fade-rise"
+          style={{ animationDuration: "var(--v8-dur-fast)" }}
+        />
+      )}
+      <aside
+        className={[
+          "fixed inset-y-0 left-0 z-40 flex w-64 shrink-0 flex-col border-r border-[color:var(--v8-border)] bg-surface",
+          "transition-transform duration-base ease-out lg:static lg:translate-x-0",
+          navOpen ? "translate-x-0" : "-translate-x-full",
+        ].join(" ")}
+      >
       <div className="flex items-center gap-3 px-5 h-16 border-b border-[color:var(--v8-border)]">
         <BrandMark size={32} />
         <div className="leading-tight">
@@ -128,6 +146,7 @@ export function Sidebar() {
           </div>
         </div>
       </div>
-    </aside>
+      </aside>
+    </>
   );
 }

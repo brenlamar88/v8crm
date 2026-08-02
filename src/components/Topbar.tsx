@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { Button } from "./primitives.tsx";
 import { SearchBox } from "./SearchBox.tsx";
 import { IconBell, IconPlus } from "./icons.tsx";
+import { useNav } from "../app/nav.tsx";
 
 function IconButton({ children, label }: { children: ReactNode; label: string }) {
   return (
@@ -29,8 +30,18 @@ export function Topbar({
   action?: string;
   onAction?: () => void;
 }) {
+  const { setNavOpen } = useNav();
   return (
-    <header className="sticky top-0 z-10 flex items-center gap-4 border-b border-[color:var(--v8-border)] bg-[color:var(--v8-glass)] px-6 h-16 backdrop-blur">
+    <header className="sticky top-0 z-10 flex items-center gap-4 border-b border-[color:var(--v8-border)] bg-[color:var(--v8-glass)] px-4 sm:px-6 h-16 backdrop-blur">
+      <button
+        aria-label="Open navigation"
+        onClick={() => setNavOpen(true)}
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-md text-text-secondary hover:text-text hover:bg-raised transition-colors duration-fast lg:hidden"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden>
+          <path d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
       <div className="min-w-0">
         <h1 className="truncate text-h3 font-semibold">{title}</h1>
         {subtitle && <p className="truncate text-body-sm text-text-muted">{subtitle}</p>}
