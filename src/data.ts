@@ -25,7 +25,8 @@ export interface Task {
   id: string;
   title: string;
   done: boolean;
-  due: string; // free-form, e.g. "Fri" or "" — kept simple like the other fields
+  due: string; // legacy free-form label, e.g. "Fri" or "" — kept for old rows
+  dueDate?: string; // ISO date "YYYY-MM-DD" when set with the date picker
 }
 
 export interface Account {
@@ -65,6 +66,72 @@ export function agoMinutes(when: string): number {
   return n * unit;
 }
 
+/* --- Task due dates -------------------------------------------------------- */
+
+export type DueStatus = "overdue" | "today" | "soon" | "upcoming" | "none";
+
+/** Local midnight for a date, so comparisons ignore the time of day. */
+function startOfDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/** Whole days between two dates (b - a), by local calendar day. Negative when
+    b is before a. */
+function dayDiff(a: Date, b: Date): number {
+  return Math.round((startOfDay(b).getTime() - startOfDay(a).getTime()) / 86_400_000);
+}
+
+/** Parse an ISO "YYYY-MM-DD" as a local date (not UTC, so it doesn't shift a
+    day in western timezones). Returns null for anything unparseable. */
+export function parseDueDate(iso: string | undefined): Date | null {
+  if (!iso) return null;
+  const m = iso.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return null;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** Classify a task's due date relative to today. "soon" is within 3 days.
+    Undated (or legacy free-form) tasks are "none". */
+export function dueStatus(task: Pick<Task, "dueDate">, now: Date = new Date()): DueStatus {
+  const d = parseDueDate(task.dueDate);
+  if (!d) return "none";
+  const delta = dayDiff(now, d);
+  if (delta < 0) return "overdue";
+  if (delta === 0) return "today";
+  if (delta <= 3) return "soon";
+  return "upcoming";
+}
+
+/** Short human label for a due date: "3d overdue", "Today", "Tomorrow",
+    "in 4d", else an absolute "Aug 12". Falls back to the legacy free-form
+    label when there's no real date. */
+export function dueLabel(task: Pick<Task, "dueDate" | "due">, now: Date = new Date()): string {
+  const d = parseDueDate(task.dueDate);
+  if (!d) return task.due ?? "";
+  const delta = dayDiff(now, d);
+  if (delta < 0) return `${Math.abs(delta)}d overdue`;
+  if (delta === 0) return "Today";
+  if (delta === 1) return "Tomorrow";
+  if (delta <= 6) return `in ${delta}d`;
+  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
+/** Sort key for due dates: earliest first, undated last. */
+export function dueSortKey(task: Pick<Task, "dueDate">): number {
+  const d = parseDueDate(task.dueDate);
+  return d ? d.getTime() : Number.MAX_SAFE_INTEGER;
+}
+
+/** ISO "YYYY-MM-DD" for a date `days` from today — lets the sample tasks below
+    stay a realistic overdue/today/soon spread whenever the demo is opened. */
+function isoIn(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
 /** Stages in board order, with the tint used across the console. */
 export const pipelineStages: { stage: EngagementStage; tint: string }[] = [
   { stage: "Discovery", tint: "var(--v8-text-muted)" },
@@ -99,7 +166,7 @@ export const accounts: Account[] = [
       { when: "3w ago", kind: "email", text: "Sent Q3 roadmap draft for sign-off." },
     ],
     tasks: [
-      { id: "t-2041-1", title: "Scope the incident-reporting module", done: false, due: "This week" },
+      { id: "t-2041-1", title: "Scope the incident-reporting module", done: false, due: "", dueDate: isoIn(-2) },
       { id: "t-2041-2", title: "Send Q3 roadmap for sign-off", done: true, due: "" },
     ],
   },
@@ -188,8 +255,8 @@ export const accounts: Account[] = [
       { when: "5w ago", kind: "note", text: "Champion (former ops lead) departed the org." },
     ],
     tasks: [
-      { id: "t-2024-1", title: "Book an exec check-in", done: false, due: "Mon" },
-      { id: "t-2024-2", title: "Draft a save plan before renewal", done: false, due: "" },
+      { id: "t-2024-1", title: "Book an exec check-in", done: false, due: "", dueDate: isoIn(0) },
+      { id: "t-2024-2", title: "Draft a save plan before renewal", done: false, due: "", dueDate: isoIn(2) },
     ],
   },
   {

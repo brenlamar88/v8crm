@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { IconBell } from "./icons.tsx";
 import { KindMarker } from "./Timeline.tsx";
 import { useAccounts } from "../store/accounts.tsx";
-import { agoMinutes } from "../data.ts";
+import { agoMinutes, dueLabel, dueStatus, dueSortKey } from "../data.ts";
 
 export function NotificationsMenu() {
   const { accounts } = useAccounts();
@@ -19,6 +19,20 @@ export function NotificationsMenu() {
     () => accounts.filter((a) => a.stage === "At Risk" || a.health < 50),
     [accounts],
   );
+
+  // Open tasks that are overdue or due today, soonest first — the time-sensitive
+  // follow-ups worth surfacing on the bell.
+  const dueTasks = useMemo(
+    () =>
+      accounts
+        .flatMap((a) => a.tasks.map((t) => ({ ...t, account: a.name, code: a.code })))
+        .filter((t) => !t.done && (dueStatus(t) === "overdue" || dueStatus(t) === "today"))
+        .sort((x, y) => dueSortKey(x) - dueSortKey(y))
+        .slice(0, 4),
+    [accounts],
+  );
+
+  const alertCount = atRisk.length + dueTasks.length;
 
   const recent = useMemo(
     () =>
@@ -42,7 +56,7 @@ export function NotificationsMenu() {
         className="relative grid h-9 w-9 place-items-center rounded-md text-text-muted hover:text-text hover:bg-raised transition-colors duration-fast ease-out"
       >
         <IconBell />
-        {atRisk.length > 0 && (
+        {alertCount > 0 && (
           <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-down" />
         )}
       </button>
@@ -60,15 +74,47 @@ export function NotificationsMenu() {
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-[color:var(--v8-border)]">
               <span className="text-body-sm font-semibold">Notifications</span>
-              {atRisk.length > 0 && (
-                <span className="tabular rounded-pill bg-down-soft px-2 h-5 inline-flex items-center text-micro font-semibold text-down">
-                  {atRisk.length} at risk
-                </span>
+              {alertCount === 0 && (
+                <span className="text-micro text-text-muted">All clear</span>
               )}
             </div>
 
-            {atRisk.length > 0 && (
+            {dueTasks.length > 0 && (
               <div className="py-1">
+                <div className="eyebrow px-4 pt-2 pb-1">Due &amp; overdue</div>
+                {dueTasks.map((t) => (
+                  <button
+                    key={`${t.code}-${t.id}`}
+                    onClick={() => go(t.code)}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors duration-fast hover:bg-raised"
+                  >
+                    <span
+                      className={[
+                        "grid h-8 w-8 shrink-0 place-items-center rounded-md",
+                        dueStatus(t) === "overdue" ? "bg-down-soft text-down" : "bg-warn-soft text-warn",
+                      ].join(" ")}
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <circle cx="12" cy="12" r="9" />
+                        <path d="M12 7v5l3 2" />
+                      </svg>
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-body-sm font-medium">{t.title}</div>
+                      <div className="text-label text-text-muted">
+                        {t.account} ·{" "}
+                        <span className={dueStatus(t) === "overdue" ? "font-semibold text-down" : "font-semibold text-warn"}>
+                          {dueLabel(t)}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {atRisk.length > 0 && (
+              <div className={dueTasks.length > 0 ? "py-1 border-t border-[color:var(--v8-border)]" : "py-1"}>
                 <div className="eyebrow px-4 pt-2 pb-1">Needs attention</div>
                 {atRisk.map((a) => (
                   <button

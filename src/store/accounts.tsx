@@ -67,7 +67,7 @@ interface AccountsContextValue {
   removeAccount: (code: string) => void;
   addContact: (code: string, contact: Contact) => void;
   removeContact: (code: string, email: string) => void;
-  addTask: (code: string, title: string, due: string) => void;
+  addTask: (code: string, title: string, dueDate: string) => void;
   toggleTask: (code: string, taskId: string) => void;
   removeTask: (code: string, taskId: string) => void;
   logActivity: (code: string, event: TimelineEvent) => void;
@@ -243,11 +243,11 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
   );
 
   const addTask = useCallback(
-    (code: string, title: string, due: string) => {
+    (code: string, title: string, dueDate: string) => {
       const current = accounts.find((a) => a.code === code);
       if (!current) return;
       const id = `t-${code}-${current.tasks.length}-${title.length}`;
-      writeTasks(code, [...current.tasks, { id, title, due, done: false }]);
+      writeTasks(code, [...current.tasks, { id, title, due: "", dueDate, done: false }]);
     },
     [accounts, writeTasks],
   );

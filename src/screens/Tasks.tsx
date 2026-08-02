@@ -1,17 +1,26 @@
 /* ----------------------------------------------------------------------------
    Tasks — every follow-up across the book in one list. Aggregates each account's
-   tasks, filters by open/done, checks off inline, and links each to its record.
-   Open tasks first, then completed.
+   tasks, filters by open/overdue/done, checks off inline, and links each to its
+   record. Sorted open-first, then by due date (soonest — and overdue — first).
    -------------------------------------------------------------------------- */
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Topbar } from "../components/Topbar.tsx";
 import { useAccounts } from "../store/accounts.tsx";
-import type { Task } from "../data.ts";
+import { type Task, dueLabel, dueStatus, dueSortKey } from "../data.ts";
 
 type Row = Task & { account: string; code: string };
-type Filter = "Open" | "Done" | "All";
-const FILTERS: Filter[] = ["Open", "All", "Done"];
+type Filter = "Open" | "Overdue" | "All" | "Done";
+const FILTERS: Filter[] = ["Open", "Overdue", "All", "Done"];
+
+/** Due-label color: overdue red, due-today amber, done faint, else muted. */
+function dueClass(t: Row): string {
+  if (t.done) return "text-text-faint";
+  const s = dueStatus(t);
+  if (s === "overdue") return "font-semibold text-down";
+  if (s === "today") return "font-semibold text-warn";
+  return "text-text-muted";
+}
 
 export function Tasks() {
   const { accounts, toggleTask } = useAccounts();
@@ -22,41 +31,70 @@ export function Tasks() {
     () =>
       accounts
         .flatMap((a) => a.tasks.map((t) => ({ ...t, account: a.name, code: a.code })))
-        // Open first, then done.
-        .sort((x, y) => Number(x.done) - Number(y.done)),
+        // Open before done; within a group, soonest (and overdue) due first,
+        // undated last.
+        .sort((x, y) =>
+          x.done !== y.done ? Number(x.done) - Number(y.done) : dueSortKey(x) - dueSortKey(y),
+        ),
     [accounts],
   );
 
-  const rows = all.filter((r) =>
-    filter === "All" ? true : filter === "Open" ? !r.done : r.done,
-  );
   const openCount = all.filter((r) => !r.done).length;
+  const overdueCount = all.filter((r) => !r.done && dueStatus(r) === "overdue").length;
+
+  const rows = all.filter((r) =>
+    filter === "All"
+      ? true
+      : filter === "Open"
+        ? !r.done
+        : filter === "Overdue"
+          ? !r.done && dueStatus(r) === "overdue"
+          : r.done,
+  );
+
+  const subtitle =
+    `${openCount} open` +
+    (overdueCount > 0 ? ` · ${overdueCount} overdue` : "") +
+    ` across ${accounts.length} accounts`;
 
   return (
     <>
-      <Topbar title="Tasks" subtitle={`${openCount} open across ${accounts.length} accounts`} />
+      <Topbar title="Tasks" subtitle={subtitle} />
       <div className="px-6 py-6">
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          {FILTERS.map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={[
-                "rounded-pill px-4 h-8 text-label font-semibold transition-colors duration-fast ease-out",
-                f === filter
-                  ? "bg-accent-soft text-accent-200 border border-[color:var(--v8-accent-line)]"
-                  : "bg-surface text-text-secondary border border-[color:var(--v8-border)] hover:bg-raised hover:text-text",
-              ].join(" ")}
-            >
-              {f}
-            </button>
-          ))}
+          {FILTERS.map((f) => {
+            const isOverdue = f === "Overdue";
+            const count = isOverdue ? overdueCount : 0;
+            return (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={[
+                  "inline-flex items-center gap-2 rounded-pill px-4 h-8 text-label font-semibold transition-colors duration-fast ease-out",
+                  f === filter
+                    ? "bg-accent-soft text-accent-200 border border-[color:var(--v8-accent-line)]"
+                    : "bg-surface text-text-secondary border border-[color:var(--v8-border)] hover:bg-raised hover:text-text",
+                ].join(" ")}
+              >
+                {f}
+                {isOverdue && count > 0 && (
+                  <span className="tabular grid h-4 min-w-4 place-items-center rounded-pill bg-down-soft px-1 text-micro font-bold text-down">
+                    {count}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         <div className="panel divide-y divide-[color:var(--v8-border)]">
           {rows.length === 0 ? (
             <div className="grid h-32 place-items-center text-body text-text-muted">
-              {filter === "Open" ? "No open tasks — nice." : "No tasks here."}
+              {filter === "Open"
+                ? "No open tasks — nice."
+                : filter === "Overdue"
+                  ? "Nothing overdue — you're on top of it."
+                  : "No tasks here."}
             </div>
           ) : (
             rows.map((r) => (
@@ -88,7 +126,11 @@ export function Tasks() {
                     {r.account}
                   </span>
                 </button>
-                {r.due && <span className="tabular shrink-0 text-label text-text-muted">{r.due}</span>}
+                {dueLabel(r) && (
+                  <span className={["tabular shrink-0 text-label", dueClass(r)].join(" ")}>
+                    {dueLabel(r)}
+                  </span>
+                )}
               </div>
             ))
           )}

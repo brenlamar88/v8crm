@@ -15,7 +15,7 @@ import { EditAccountModal } from "../components/EditAccountModal.tsx";
 import { useToast } from "../components/toast.tsx";
 import { Placeholder } from "./Placeholder.tsx";
 import { useAccounts } from "../store/accounts.tsx";
-import { type Account, type EngagementStage, type TimelineKind } from "../data.ts";
+import { type Account, type EngagementStage, type TimelineKind, dueLabel, dueStatus } from "../data.ts";
 
 const stageTone: Record<EngagementStage, Parameters<typeof Badge>[0]["tone"]> = {
   Discovery: "neutral",
@@ -223,10 +223,11 @@ export function AccountDetail() {
                   className="flex-1"
                 />
                 <Input
+                  type="date"
                   value={taskDue}
                   onChange={(e) => setTaskDue(e.target.value)}
-                  placeholder="Due"
-                  className="w-24"
+                  aria-label="Due date"
+                  className="w-40"
                 />
                 <Button variant="subtle" type="submit" disabled={!taskTitle.trim()}>Add</Button>
               </form>
@@ -264,8 +265,21 @@ export function AccountDetail() {
                     >
                       {t.title}
                     </span>
-                    {t.due && (
-                      <span className="tabular shrink-0 text-label text-text-muted">{t.due}</span>
+                    {dueLabel(t) && (
+                      <span
+                        className={[
+                          "tabular shrink-0 text-label",
+                          t.done
+                            ? "text-text-faint"
+                            : dueStatus(t) === "overdue"
+                              ? "font-semibold text-down"
+                              : dueStatus(t) === "today"
+                                ? "font-semibold text-warn"
+                                : "text-text-muted",
+                        ].join(" ")}
+                      >
+                        {dueLabel(t)}
+                      </span>
                     )}
                     <button
                       onClick={() => removeTask(code, t.id)}

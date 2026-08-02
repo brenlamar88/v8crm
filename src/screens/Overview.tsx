@@ -10,7 +10,7 @@ import { StatCard, StatCardRow } from "../components/StatCard.tsx";
 import { Sparkline } from "../components/Sparkline.tsx";
 import { AccountsTable } from "../components/AccountsTable.tsx";
 import { useAccounts } from "../store/accounts.tsx";
-import { revenueSeries } from "../data.ts";
+import { revenueSeries, dueLabel, dueStatus, dueSortKey } from "../data.ts";
 
 export function Overview() {
   const { accounts, openNewAccount, toggleTask } = useAccounts();
@@ -18,6 +18,8 @@ export function Overview() {
   const attention = accounts.filter((a) => a.health < 80).slice(0, 4);
   const openTasks = accounts
     .flatMap((a) => a.tasks.filter((t) => !t.done).map((t) => ({ ...t, account: a.name, code: a.code })))
+    // Soonest and overdue first; undated last.
+    .sort((x, y) => dueSortKey(x) - dueSortKey(y))
     .slice(0, 5);
 
   return (
@@ -115,7 +117,20 @@ export function Overview() {
                       <div className="truncate text-body-sm text-text">{t.title}</div>
                       <div className="truncate text-label text-text-muted">{t.account}</div>
                     </div>
-                    {t.due && <span className="tabular shrink-0 text-label text-text-muted">{t.due}</span>}
+                    {dueLabel(t) && (
+                      <span
+                        className={[
+                          "tabular shrink-0 text-label",
+                          dueStatus(t) === "overdue"
+                            ? "font-semibold text-down"
+                            : dueStatus(t) === "today"
+                              ? "font-semibold text-warn"
+                              : "text-text-muted",
+                        ].join(" ")}
+                      >
+                        {dueLabel(t)}
+                      </span>
+                    )}
                   </div>
                 ))
               )}
