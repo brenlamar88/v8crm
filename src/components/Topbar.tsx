@@ -30,7 +30,7 @@ export function Topbar({
   onAction?: () => void;
 }) {
   return (
-    <header className="sticky top-0 z-10 flex items-center gap-4 border-b border-[color:var(--v8-border)] bg-base/80 px-6 h-16 backdrop-blur">
+    <header className="sticky top-0 z-10 flex items-center gap-4 border-b border-[color:var(--v8-border)] bg-[color:var(--v8-glass)] px-6 h-16 backdrop-blur">
       <div className="min-w-0">
         <h1 className="truncate text-h3 font-semibold">{title}</h1>
         {subtitle && <p className="truncate text-body-sm text-text-muted">{subtitle}</p>}

@@ -65,7 +65,7 @@ export function AccountsTable({
               <tr
                 key={a.code}
                 onClick={() => navigate(`/accounts/${a.code}`)}
-                className="group cursor-pointer border-t border-[color:var(--v8-border)] transition-colors duration-fast ease-out hover:bg-raised/60"
+                className="group cursor-pointer border-t border-[color:var(--v8-border)] transition-colors duration-fast ease-out hover:bg-raised"
               >
                 <td className="px-5 py-4">
                   <div className="flex items-center gap-3">

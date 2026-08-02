@@ -104,7 +104,7 @@ export function SearchBox() {
                 onMouseEnter={() => setActive(i)}
                 className={[
                   "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors duration-fast",
-                  i === active ? "bg-raised" : "hover:bg-raised/60",
+                  i === active ? "bg-raised" : "hover:bg-raised",
                 ].join(" ")}
               >
                 <span className="grid h-8 w-8 shrink-0 place-items-center rounded-md bg-accent-soft text-accent-200 text-label font-bold">

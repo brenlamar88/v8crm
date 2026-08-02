@@ -133,7 +133,7 @@ export function SegmentedControl({
   return (
     <div className="relative inline-flex rounded-md bg-sunken p-1 border border-[color:var(--v8-border)]">
       <div
-        className="absolute top-1 bottom-1 rounded-sm bg-accent-soft border border-[color:var(--v8-accent-500)]/40 transition-[left,width] duration-base ease-out"
+        className="absolute top-1 bottom-1 rounded-sm bg-accent-soft border border-[color:var(--v8-accent-line)] transition-[left,width] duration-base ease-out"
         style={{
           width: `calc((100% - 0.5rem) / ${options.length})`,
           left: `calc(0.25rem + ${activeIndex} * (100% - 0.5rem) / ${options.length})`,

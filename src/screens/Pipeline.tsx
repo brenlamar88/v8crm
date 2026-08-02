@@ -80,7 +80,7 @@ export function Pipeline() {
                     <span className="tabular text-label text-text-muted">{money(colMrr)}</span>
                   )}
                 </header>
-                <div className="flex flex-col gap-3 rounded-lg bg-surface/40 p-2 min-h-24">
+                <div className="flex flex-col gap-3 rounded-lg bg-[color:var(--v8-well)] p-2 min-h-24">
                   {rows.length === 0 ? (
                     <div className="grid h-24 place-items-center text-label text-text-faint">Empty</div>
                   ) : (

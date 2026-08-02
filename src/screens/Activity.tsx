@@ -40,7 +40,7 @@ export function Activity() {
               className={[
                 "rounded-pill px-4 h-8 text-label font-semibold capitalize transition-colors duration-fast ease-out",
                 f === filter
-                  ? "bg-accent-soft text-accent-200 border border-[color:var(--v8-accent-500)]/40"
+                  ? "bg-accent-soft text-accent-200 border border-[color:var(--v8-accent-line)]"
                   : "bg-surface text-text-secondary border border-[color:var(--v8-border)] hover:bg-raised hover:text-text",
               ].join(" ")}
             >
@@ -59,7 +59,7 @@ export function Activity() {
               <button
                 key={`${r.code}-${i}`}
                 onClick={() => navigate(`/accounts/${r.code}`)}
-                className="group flex w-full items-center gap-4 px-5 py-4 text-left transition-colors duration-fast ease-out hover:bg-raised/60"
+                className="group flex w-full items-center gap-4 px-5 py-4 text-left transition-colors duration-fast ease-out hover:bg-raised"
               >
                 <KindMarker kind={r.kind} />
                 <div className="min-w-0 flex-1">

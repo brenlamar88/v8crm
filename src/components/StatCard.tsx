@@ -42,7 +42,7 @@ export function StatCard({
       {/* Thin progress hairline, like the reference's dashed meter. */}
       <div className="mt-4 h-1 rounded-pill bg-sunken overflow-hidden">
         <div
-          className="h-full rounded-pill bg-accent-500/70 transition-[width] duration-slow ease-out"
+          className="h-full rounded-pill bg-accent-500 transition-[width] duration-slow ease-out"
           style={{ width: `${Math.min(100, 40 + Math.abs(trend) * 6)}%` }}
         />
       </div>

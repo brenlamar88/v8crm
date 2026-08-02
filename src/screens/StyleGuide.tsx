@@ -69,7 +69,7 @@ function SpaceRow({ token, px }: { token: string; px: number }) {
     <div className="flex items-center gap-4">
       <span className="tabular w-16 text-body-sm text-text-secondary">{token}</span>
       <span className="tabular w-12 text-label text-text-muted">{px}px</span>
-      <span className="h-4 rounded-sm bg-accent-500/70" style={{ width: `${px}px` }} />
+      <span className="h-4 rounded-sm bg-accent-500" style={{ width: `${px}px` }} />
     </div>
   );
 }

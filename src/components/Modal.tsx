@@ -50,7 +50,7 @@ export function Modal({
       <button
         aria-label="Close dialog"
         onClick={onClose}
-        className="absolute inset-0 bg-[color:var(--v8-bg-sunken)]/70 backdrop-blur-sm animate-fade-rise"
+        className="absolute inset-0 bg-[color:var(--v8-scrim)] backdrop-blur-sm animate-fade-rise"
         style={{ animationDuration: "var(--v8-dur-fast)" }}
       />
       {/* Panel */}

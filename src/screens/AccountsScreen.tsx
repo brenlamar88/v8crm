@@ -42,7 +42,7 @@ export function AccountsScreen() {
               className={[
                 "rounded-pill px-4 h-8 text-label font-semibold transition-colors duration-fast ease-out",
                 f === filter
-                  ? "bg-accent-soft text-accent-200 border border-[color:var(--v8-accent-500)]/40"
+                  ? "bg-accent-soft text-accent-200 border border-[color:var(--v8-accent-line)]"
                   : "bg-surface text-text-secondary border border-[color:var(--v8-border)] hover:bg-raised hover:text-text",
               ].join(" ")}
             >

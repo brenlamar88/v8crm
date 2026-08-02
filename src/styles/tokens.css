@@ -38,6 +38,15 @@
   --v8-accent-700: #5636d1;
   --v8-accent-soft: rgba(124, 92, 255, 0.14);  /* tinted fills */
   --v8-accent-softer: rgba(124, 92, 255, 0.08);
+  --v8-accent-line: rgba(124, 92, 255, 0.40);  /* accent hairline / active border */
+
+  /* --- Pre-baked translucencies -------------------------------------------
+     Tailwind's `/opacity` modifier can't inject alpha into the plain var()
+     colors above, so any translucent surface is defined explicitly here and
+     used via bg-[color:var(--…)] — reliable and centralized. */
+  --v8-scrim: rgba(5, 4, 9, 0.7);          /* modal overlay */
+  --v8-glass: rgba(8, 7, 13, 0.8);         /* sticky topbar over content */
+  --v8-well: rgba(0, 0, 0, 0.22);          /* board column trough */
 
   /* --- Color: status ------------------------------------------------------ */
   --v8-up: #34d399;             /* positive trend / healthy */
