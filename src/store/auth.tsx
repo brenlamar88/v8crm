@@ -3,14 +3,16 @@
    provider reports `enabled: false` and the app runs open (local demo, no
    sign-in). When it is, it tracks the session and gates the app behind a login.
    -------------------------------------------------------------------------- */
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import type { User } from "@supabase/supabase-js";
-import { supabase, isSupabaseEnabled } from "../lib/supabase.ts";
+import { supabase, isSupabaseEnabled, fetchProfile, upsertProfile, type Profile } from "../lib/supabase.ts";
 
 interface AuthValue {
   enabled: boolean;
   user: User | null;
   loading: boolean;
+  profile: Profile | null;
+  saveProfile: (profile: Profile) => Promise<void>;
   signIn: (email: string, password: string) => Promise<string | null>;
   signUp: (email: string, password: string) => Promise<string | null>;
   signOut: () => Promise<void>;
@@ -20,6 +22,7 @@ const AuthContext = createContext<AuthValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   // Only "loading" while we have a Supabase client to ask about the session.
   const [loading, setLoading] = useState(isSupabaseEnabled);
 
@@ -40,6 +43,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  // Load the profile when the signed-in user changes. Missing → a default
+  // seeded from the email local-part, so Settings has something to edit.
+  useEffect(() => {
+    if (!user) {
+      setProfile(null);
+      return;
+    }
+    let active = true;
+    fetchProfile(user.id).then((p) => {
+      if (!active) return;
+      setProfile(p ?? { name: user.email?.split("@")[0] ?? "", role: "", workspace: "" });
+    });
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  const saveProfile = useCallback(
+    async (next: Profile) => {
+      if (!user) return;
+      setProfile(next);
+      await upsertProfile(user.id, next);
+    },
+    [user],
+  );
+
   const signIn = async (email: string, password: string) => {
     if (!supabase) return null;
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -58,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ enabled: isSupabaseEnabled, user, loading, signIn, signUp, signOut }}
+      value={{ enabled: isSupabaseEnabled, user, loading, profile, saveProfile, signIn, signUp, signOut }}
     >
       {children}
     </AuthContext.Provider>

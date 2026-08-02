@@ -16,6 +16,37 @@ export const supabase: SupabaseClient | null =
 export const isSupabaseEnabled = Boolean(supabase);
 
 const TABLE = "accounts";
+const PROFILES = "profiles";
+
+export interface Profile {
+  name: string;
+  role: string;
+  workspace: string;
+}
+
+/** Fetch the signed-in user's profile row, or null if none/failure. */
+export async function fetchProfile(userId: string): Promise<Profile | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from(PROFILES)
+    .select("name, role, workspace")
+    .eq("id", userId)
+    .maybeSingle();
+  if (error) {
+    console.warn("[supabase] profile fetch failed:", error.message);
+    return null;
+  }
+  return data as Profile | null;
+}
+
+/** Insert or update the signed-in user's profile. Best-effort. */
+export async function upsertProfile(userId: string, profile: Profile): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase
+    .from(PROFILES)
+    .upsert({ id: userId, ...profile, updated_at: new Date().toISOString() });
+  if (error) console.warn("[supabase] profile upsert failed:", error.message);
+}
 
 /* Row shape mirrors the SQL schema (see supabase/schema.sql): scalar columns
    plus JSONB for the array/nested fields. snake_case in the DB, camelCase here. */

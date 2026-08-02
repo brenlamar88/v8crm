@@ -62,3 +62,31 @@ create policy "own accounts delete"
 -- changes to rows its SELECT policy permits. (The drop above removes the table
 -- from the publication, so this re-add is safe on re-run.)
 alter publication supabase_realtime add table public.accounts;
+
+-- Profiles -------------------------------------------------------------------
+-- One row per user for display name / role / workspace, editable in Settings.
+create table if not exists public.profiles (
+  id         uuid primary key references auth.users (id) on delete cascade,
+  name       text not null default '',
+  role       text not null default '',
+  workspace  text not null default '',
+  updated_at timestamptz not null default now()
+);
+
+alter table public.profiles enable row level security;
+
+drop policy if exists "own profile read"   on public.profiles;
+drop policy if exists "own profile insert"  on public.profiles;
+drop policy if exists "own profile update"  on public.profiles;
+
+create policy "own profile read"
+  on public.profiles for select to authenticated
+  using (id = auth.uid());
+
+create policy "own profile insert"
+  on public.profiles for insert to authenticated
+  with check (id = auth.uid());
+
+create policy "own profile update"
+  on public.profiles for update to authenticated
+  using (id = auth.uid()) with check (id = auth.uid());

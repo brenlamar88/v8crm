@@ -95,15 +95,17 @@ function Item({ item }: { item: NavItem }) {
 
 export function Sidebar() {
   const { navOpen, setNavOpen } = useNav();
-  const { enabled, user, signOut } = useAuth();
+  const { enabled, user, profile, signOut } = useAuth();
 
-  // Signed in → show the account's email; local demo → the sample principal.
+  // Signed in → the user's profile name (falls back to email); local demo → the
+  // sample principal.
   const email = user?.email ?? "";
-  const primaryName = enabled && user ? email : "Bren Roberts";
-  const secondary = enabled && user ? "Signed in" : "Principal · V8";
+  const displayName = (profile?.name?.trim() || email) ?? "";
+  const primaryName = enabled && user ? displayName : "Bren Roberts";
+  const secondary = enabled && user ? (profile?.role?.trim() || "Signed in") : "Principal · V8";
   const initials =
     enabled && user
-      ? (email[0] ?? "?").toUpperCase()
+      ? (displayName.trim()[0] ?? "?").toUpperCase()
       : "BR";
 
   return (
