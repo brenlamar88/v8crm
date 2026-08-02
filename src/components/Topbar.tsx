@@ -4,7 +4,8 @@
    -------------------------------------------------------------------------- */
 import type { ReactNode } from "react";
 import { Button } from "./primitives.tsx";
-import { IconSearch, IconBell, IconPlus } from "./icons.tsx";
+import { SearchBox } from "./SearchBox.tsx";
+import { IconBell, IconPlus } from "./icons.tsx";
 
 function IconButton({ children, label }: { children: ReactNode; label: string }) {
   return (
@@ -36,13 +37,7 @@ export function Topbar({
       </div>
 
       <div className="ml-auto flex items-center gap-2">
-        <label className="hidden md:flex items-center gap-2 rounded-md border border-[color:var(--v8-border)] bg-surface px-3 h-9 w-64 text-text-muted focus-within:border-accent focus-within:text-text-secondary transition-colors duration-fast">
-          <IconSearch width={16} height={16} />
-          <input
-            className="w-full bg-transparent text-body text-text placeholder:text-text-muted outline-none"
-            placeholder="Search accounts, deals…"
-          />
-        </label>
+        <SearchBox />
         <IconButton label="Notifications">
           <IconBell />
           <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-accent-400" />
