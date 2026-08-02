@@ -81,8 +81,12 @@ export function SearchBox() {
           }}
           onKeyDown={onKeyDown}
         />
-        {query && (
+        {query ? (
           <span className="tabular text-micro text-text-faint">{results.length}</span>
+        ) : (
+          <kbd className="rounded-sm border border-[color:var(--v8-border-strong)] bg-raised px-1.5 py-0.5 text-micro text-text-muted">
+            ⌘K
+          </kbd>
         )}
       </label>
 
