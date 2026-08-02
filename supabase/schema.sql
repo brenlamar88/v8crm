@@ -56,3 +56,9 @@ create policy "own accounts delete"
   on public.accounts for delete
   to authenticated
   using (owner_id = auth.uid());
+
+-- Realtime: broadcast row changes to the owner's subscribed sessions so edits
+-- sync live across tabs/devices. RLS still applies — a client only receives
+-- changes to rows its SELECT policy permits. (The drop above removes the table
+-- from the publication, so this re-add is safe on re-run.)
+alter publication supabase_realtime add table public.accounts;

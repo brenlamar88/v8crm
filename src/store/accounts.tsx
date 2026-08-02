@@ -19,7 +19,9 @@ import {
   upsertAccount,
   deleteAccountRow,
   seedIfEmpty,
+  subscribeToAccounts,
 } from "../lib/supabase.ts";
+import { useAuth } from "./auth.tsx";
 
 /* Persistence — accounts survive a refresh via localStorage. The stored blob
    is versioned; a version bump (or corrupt/absent data) falls back to the seed
@@ -84,10 +86,11 @@ function nextCode(list: Account[]): string {
 export function AccountsProvider({ children }: { children: ReactNode }) {
   const [accounts, setAccounts] = useState<Account[]>(loadAccounts);
   const [newAccountOpen, setNewAccountOpen] = useState(false);
+  const userId = useAuth().user?.id;
 
-  // Hydrate from Supabase once on mount when it's configured. Remote rows win;
-  // an empty table is seeded from what we have locally; any failure (missing
-  // table, network, RLS) leaves the local data untouched.
+  // Hydrate from Supabase when configured, re-running if the signed-in user
+  // changes. Remote rows win; an empty table is seeded from what we have
+  // locally; any failure (missing table, network, RLS) leaves local untouched.
   useEffect(() => {
     if (!isSupabaseEnabled) return;
     let cancelled = false;
@@ -103,7 +106,24 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [userId]);
+
+  // Live sync: merge row changes from other tabs/devices for this owner. Our
+  // own writes echo back too, but re-applying the same row is idempotent.
+  useEffect(() => {
+    if (!isSupabaseEnabled || !userId) return;
+    return subscribeToAccounts(userId, (change) => {
+      setAccounts((prev) => {
+        if (change.type === "delete") {
+          return prev.filter((a) => a.code !== change.code);
+        }
+        const exists = prev.some((a) => a.code === change.account.code);
+        return exists
+          ? prev.map((a) => (a.code === change.account.code ? change.account : a))
+          : [change.account, ...prev];
+      });
+    });
+  }, [userId]);
 
   // Cache the book locally on every change — offline fallback + instant boot.
   useEffect(() => {

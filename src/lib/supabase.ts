@@ -106,6 +106,37 @@ export async function deleteAccountRow(code: string): Promise<void> {
   if (error) console.warn("[supabase] delete failed:", error.message);
 }
 
+export type AccountChange =
+  | { type: "upsert"; account: Account }
+  | { type: "delete"; code: string };
+
+/** Subscribe to live row changes for one owner's accounts. Returns an
+    unsubscribe fn; a no-op when Supabase is off. */
+export function subscribeToAccounts(
+  ownerId: string,
+  onChange: (change: AccountChange) => void,
+): () => void {
+  if (!supabase) return () => {};
+  const channel = supabase
+    .channel(`accounts-${ownerId}`)
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: TABLE, filter: `owner_id=eq.${ownerId}` },
+      (payload) => {
+        if (payload.eventType === "DELETE") {
+          const code = (payload.old as Partial<AccountRow>).code;
+          if (code) onChange({ type: "delete", code });
+        } else {
+          onChange({ type: "upsert", account: fromRow(payload.new as AccountRow) });
+        }
+      },
+    )
+    .subscribe();
+  return () => {
+    void supabase?.removeChannel(channel);
+  };
+}
+
 /** Seed the table from the bundled accounts if it's currently empty. */
 export async function seedIfEmpty(seed: Account[]): Promise<void> {
   if (!supabase) return;

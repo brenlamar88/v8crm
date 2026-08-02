@@ -111,6 +111,14 @@ as a local demo (no login). Sign out from the sidebar footer.
 - Magic-link / OAuth providers are a drop-in swap in `src/store/auth.tsx` if you
   prefer those over passwords.
 
+### Realtime
+
+The `accounts` table is in the `supabase_realtime` publication, and the store
+subscribes to its own rows (filtered by `owner_id`), so an account created or
+edited in one tab/device appears live in the others. RLS still governs delivery
+— a session only receives changes to rows it can read. When Supabase is off this
+is a no-op.
+
 ## Stack
 
 Vite · React 18 · TypeScript · React Router 6 · Tailwind 3 (wired to CSS custom
