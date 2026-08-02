@@ -3,6 +3,7 @@
    view of the accounts that need attention. Assembled entirely from primitives.
    -------------------------------------------------------------------------- */
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Topbar } from "../components/Topbar.tsx";
 import { SegmentedControl } from "../components/primitives.tsx";
 import { StatCard, StatCardRow } from "../components/StatCard.tsx";
@@ -12,9 +13,12 @@ import { useAccounts } from "../store/accounts.tsx";
 import { revenueSeries } from "../data.ts";
 
 export function Overview() {
-  const { accounts, openNewAccount } = useAccounts();
+  const { accounts, openNewAccount, toggleTask } = useAccounts();
   const [range, setRange] = useState("1M");
   const attention = accounts.filter((a) => a.health < 80).slice(0, 4);
+  const openTasks = accounts
+    .flatMap((a) => a.tasks.filter((t) => !t.done).map((t) => ({ ...t, account: a.name, code: a.code })))
+    .slice(0, 5);
 
   return (
     <>
@@ -62,7 +66,8 @@ export function Overview() {
             </div>
           </div>
 
-          {/* Quick pipeline snapshot. */}
+          {/* Right column: pipeline snapshot + open tasks. */}
+          <div className="flex flex-col gap-4">
           <div className="panel p-6 animate-fade-rise" style={{ animationDelay: "300ms" }}>
             <span className="eyebrow">Pipeline by stage</span>
             <div className="mt-5 flex flex-col gap-4">
@@ -86,6 +91,36 @@ export function Overview() {
                 </div>
               ))}
             </div>
+          </div>
+
+          <div className="panel p-6 animate-fade-rise" style={{ animationDelay: "360ms" }}>
+            <div className="flex items-center justify-between">
+              <span className="eyebrow">Open tasks</span>
+              <Link to="/tasks" className="text-label font-semibold text-accent-400 hover:text-accent-200 transition-colors duration-fast">
+                View all
+              </Link>
+            </div>
+            <div className="mt-4 flex flex-col">
+              {openTasks.length === 0 ? (
+                <p className="py-2 text-body-sm text-text-muted">Nothing open — you're clear.</p>
+              ) : (
+                openTasks.map((t) => (
+                  <div key={`${t.code}-${t.id}`} className="flex items-center gap-3 border-b border-[color:var(--v8-border)] py-2.5 last:border-0">
+                    <button
+                      onClick={() => toggleTask(t.code, t.id)}
+                      aria-label="Mark complete"
+                      className="grid h-4 w-4 shrink-0 place-items-center rounded-sm border border-[color:var(--v8-border-strong)] hover:border-accent transition-colors duration-fast"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-body-sm text-text">{t.title}</div>
+                      <div className="truncate text-label text-text-muted">{t.account}</div>
+                    </div>
+                    {t.due && <span className="tabular shrink-0 text-label text-text-muted">{t.due}</span>}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
           </div>
         </div>
 
