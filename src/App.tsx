@@ -11,6 +11,7 @@ import { AccountDetail } from "./screens/AccountDetail.tsx";
 import { Pipeline } from "./screens/Pipeline.tsx";
 import { Activity } from "./screens/Activity.tsx";
 import { Reports } from "./screens/Reports.tsx";
+import { Settings } from "./screens/Settings.tsx";
 import { StyleGuide } from "./screens/StyleGuide.tsx";
 import { Placeholder } from "./screens/Placeholder.tsx";
 
@@ -26,10 +27,7 @@ export function App() {
           <Route path="pipeline" element={<Pipeline />} />
           <Route path="activity" element={<Activity />} />
           <Route path="reports" element={<Reports />} />
-          <Route
-            path="settings"
-            element={<Placeholder title="Settings" note="Workspace, team, and integration configuration." />}
-          />
+          <Route path="settings" element={<Settings />} />
           <Route path="styleguide" element={<StyleGuide />} />
           <Route
             path="*"
