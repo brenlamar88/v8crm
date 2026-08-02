@@ -30,6 +30,21 @@ export interface Task {
   assignee?: string; // workspace member email the task is assigned to, or unset
 }
 
+/* Per-engagement delivery metrics — DORA four keys + AI quality + service
+   signals. All optional; an engagement only reports what applies. */
+export interface Delivery {
+  deploysPerWeek?: number;
+  leadTimeHours?: number; // commit → production
+  changeFailurePct?: number; // 0–100
+  mttrHours?: number; // time to restore service
+  taskSuccessPct?: number; // AI task success 0–100
+  hallucinationPct?: number; // 0–100
+  p95ms?: number; // p95 latency
+  costPerTask?: number; // USD per AI task/request
+  uptimePct?: number; // 0–100
+  openBugs?: number;
+}
+
 export interface Account {
   name: string;
   code: string;
@@ -47,6 +62,7 @@ export interface Account {
   contacts: Contact[];
   timeline: TimelineEvent[];
   tasks: Task[];
+  delivery?: Delivery;
 }
 
 /** Look up a single account by its code (used by the detail route). */
@@ -179,6 +195,7 @@ export const accounts: Account[] = [
       { id: "t-2041-1", title: "Scope the incident-reporting module", done: false, due: "", dueDate: isoIn(-2) },
       { id: "t-2041-2", title: "Send Q3 roadmap for sign-off", done: true, due: "" },
     ],
+    delivery: { deploysPerWeek: 9, leadTimeHours: 6, changeFailurePct: 4, mttrHours: 0.5, taskSuccessPct: 97, hallucinationPct: 0.3, p95ms: 780, costPerTask: 0.014, uptimePct: 99.98, openBugs: 3 },
   },
   {
     name: "Bayou Recovery Partners",
@@ -201,6 +218,7 @@ export const accounts: Account[] = [
       { when: "2w ago", kind: "call", text: "Kickoff for build phase 2." },
     ],
     tasks: [],
+    delivery: { deploysPerWeek: 3, leadTimeHours: 30, changeFailurePct: 18, mttrHours: 5, taskSuccessPct: 89, hallucinationPct: 1.4, p95ms: 2200, costPerTask: 0.031, uptimePct: 99.4, openBugs: 12 },
   },
   {
     name: "Acadiana Services Group",
@@ -243,6 +261,7 @@ export const accounts: Account[] = [
       { when: "3w ago", kind: "ship", text: "Deployed event registration improvements." },
     ],
     tasks: [],
+    delivery: { deploysPerWeek: 5, leadTimeHours: 18, changeFailurePct: 10, mttrHours: 2, taskSuccessPct: 94, hallucinationPct: 0.8, p95ms: 1400, costPerTask: 0.02, uptimePct: 99.9, openBugs: 6 },
   },
   {
     name: "Gulf Coast Care Collective",
@@ -268,6 +287,7 @@ export const accounts: Account[] = [
       { id: "t-2024-1", title: "Book an exec check-in", done: false, due: "", dueDate: isoIn(0) },
       { id: "t-2024-2", title: "Draft a save plan before renewal", done: false, due: "", dueDate: isoIn(2) },
     ],
+    delivery: { deploysPerWeek: 0.5, leadTimeHours: 240, changeFailurePct: 34, mttrHours: 30, taskSuccessPct: 79, hallucinationPct: 3.2, p95ms: 4200, costPerTask: 0.06, uptimePct: 98.5, openBugs: 21 },
   },
   {
     name: "Teche Logistics Co.",

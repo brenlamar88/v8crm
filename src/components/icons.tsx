@@ -60,6 +60,13 @@ export const IconTime = (p: IconProps) => (
     <path d="M12 7v5l3 2" />
   </Base>
 );
+export const IconDelivery = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M12 21a9 9 0 1 1 9-9" />
+    <path d="M12 12l4-3" />
+    <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
+  </Base>
+);
 export const IconReports = (p: IconProps) => (
   <Base {...p}>
     <path d="M6 3h9l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" />

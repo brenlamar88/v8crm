@@ -17,6 +17,7 @@ import {
   IconActivity,
   IconTasks,
   IconTime,
+  IconDelivery,
   IconReports,
   IconSystem,
   IconSettings,
@@ -46,6 +47,7 @@ function buildGroups(accountCount: number, openTasks: number): { title?: string;
     {
       title: "Insights",
       items: [
+        { to: "/delivery", label: "Delivery", icon: IconDelivery },
         { to: "/activity", label: "Activity", icon: IconActivity },
         { to: "/reports", label: "Reports", icon: IconReports },
       ],

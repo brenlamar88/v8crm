@@ -5,7 +5,7 @@
    or a call fails, callers fall back to the local store so the app never breaks.
    -------------------------------------------------------------------------- */
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Account, Contact, Task, TimelineEvent } from "../data.ts";
+import type { Account, Contact, Delivery, Task, TimelineEvent } from "../data.ts";
 
 /* Public client credentials for this project's Supabase. The anon key is meant
    to be shipped to browsers — it already appears in the built bundle — and the
@@ -114,6 +114,7 @@ interface AccountRow {
   contacts: Contact[];
   timeline: TimelineEvent[];
   tasks: Task[];
+  delivery: Delivery;
 }
 
 function toRow(a: Account): AccountRow {
@@ -133,6 +134,7 @@ function toRow(a: Account): AccountRow {
     contacts: a.contacts,
     timeline: a.timeline,
     tasks: a.tasks,
+    delivery: a.delivery ?? {},
   };
 }
 
@@ -153,6 +155,7 @@ function fromRow(r: AccountRow): Account {
     contacts: r.contacts ?? [],
     timeline: r.timeline ?? [],
     tasks: r.tasks ?? [],
+    delivery: r.delivery ?? {},
   };
 }
 

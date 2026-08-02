@@ -12,12 +12,14 @@ import { Timeline } from "../components/Timeline.tsx";
 import { Modal } from "../components/Modal.tsx";
 import { Field, Input, Select, Textarea } from "../components/forms.tsx";
 import { EditAccountModal } from "../components/EditAccountModal.tsx";
+import { EditDeliveryModal } from "../components/EditDeliveryModal.tsx";
 import { AssigneeChip } from "../components/AssigneeChip.tsx";
 import { useToast } from "../components/toast.tsx";
 import { Placeholder } from "./Placeholder.tsx";
 import { useAccounts } from "../store/accounts.tsx";
 import { useWorkspace } from "../store/workspace.tsx";
 import { type Account, type EngagementStage, type TimelineKind, dueStatus } from "../data.ts";
+import { DELIVERY_METRICS, metricTone } from "../lib/metrics.ts";
 
 const stageTone: Record<EngagementStage, Parameters<typeof Badge>[0]["tone"]> = {
   Discovery: "neutral",
@@ -56,7 +58,7 @@ const ACTIVITY_KINDS: TimelineKind[] = ["note", "call", "email", "ship", "risk"]
 
 export function AccountDetail() {
   const { code = "" } = useParams();
-  const { getAccount, logActivity, removeAccount, addContact, removeContact, addTask, updateTask, toggleTask, removeTask } = useAccounts();
+  const { getAccount, logActivity, removeAccount, updateAccount, addContact, removeContact, addTask, updateTask, toggleTask, removeTask } = useAccounts();
   const toast = useToast();
   const navigate = useNavigate();
   const account: Account | undefined = getAccount(code);
@@ -65,6 +67,7 @@ export function AccountDetail() {
   const [editOpen, setEditOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [contactOpen, setContactOpen] = useState(false);
+  const [deliveryOpen, setDeliveryOpen] = useState(false);
   const [kind, setKind] = useState<TimelineKind>("note");
   const [text, setText] = useState("");
   const [cName, setCName] = useState("");
@@ -338,6 +341,38 @@ export function AccountDetail() {
               </ul>
             </div>
 
+            <div className="panel p-6 animate-fade-rise" style={{ animationDelay: "140ms" }}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-h3 font-semibold">Delivery metrics</h3>
+                  <p className="text-body-sm text-text-muted">DORA + AI quality for this engagement</p>
+                </div>
+                <Button variant="subtle" onClick={() => setDeliveryOpen(true)}>
+                  {account.delivery && Object.keys(account.delivery).length > 0 ? "Edit" : "Add metrics"}
+                </Button>
+              </div>
+              {account.delivery && Object.keys(account.delivery).length > 0 ? (
+                <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                  {DELIVERY_METRICS.map((m) => {
+                    const v = account.delivery?.[m.key];
+                    if (typeof v !== "number") return null;
+                    const tone = metricTone(m, v);
+                    const color = tone === "up" ? "text-up" : tone === "warn" ? "text-warn" : "text-down";
+                    return (
+                      <div key={m.key} className="rounded-md border border-[color:var(--v8-border)] bg-surface p-3">
+                        <div className="text-label text-text-muted">{m.label}</div>
+                        <div className={["tabular mt-1 text-h3 font-bold", color].join(" ")}>{m.format(v)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="mt-4 text-body-sm text-text-muted">
+                  No delivery metrics yet. Add DORA and AI-quality numbers to show this client how the build is performing.
+                </p>
+              )}
+            </div>
+
             <div className="panel p-6 animate-fade-rise" style={{ animationDelay: "160ms" }}>
               <h3 className="text-h3 font-semibold">Activity</h3>
               <p className="text-body-sm text-text-muted mb-5">Recent touches on this account</p>
@@ -420,6 +455,16 @@ export function AccountDetail() {
         onRequestDelete={() => {
           setEditOpen(false);
           setConfirmOpen(true);
+        }}
+      />
+
+      <EditDeliveryModal
+        open={deliveryOpen}
+        delivery={account.delivery}
+        onClose={() => setDeliveryOpen(false)}
+        onSave={(next) => {
+          updateAccount(code, { delivery: next });
+          toast("Delivery metrics saved");
         }}
       />
 

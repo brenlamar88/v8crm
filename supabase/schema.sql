@@ -70,6 +70,7 @@ create table public.accounts (
   contacts     jsonb not null default '[]'::jsonb,
   timeline     jsonb not null default '[]'::jsonb,
   tasks        jsonb not null default '[]'::jsonb,
+  delivery     jsonb not null default '{}'::jsonb,
   created_at   timestamptz not null default now(),
   primary key (workspace_id, code)
 );
