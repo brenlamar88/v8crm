@@ -11,6 +11,7 @@ import { Sparkline } from "../components/Sparkline.tsx";
 import { Timeline } from "../components/Timeline.tsx";
 import { Modal } from "../components/Modal.tsx";
 import { Field, Select, Textarea } from "../components/forms.tsx";
+import { EditAccountModal } from "../components/EditAccountModal.tsx";
 import { Placeholder } from "./Placeholder.tsx";
 import { useAccounts } from "../store/accounts.tsx";
 import { type Account, type EngagementStage, type TimelineKind } from "../data.ts";
@@ -56,6 +57,7 @@ export function AccountDetail() {
   const account: Account | undefined = getAccount(code);
 
   const [logOpen, setLogOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const [kind, setKind] = useState<TimelineKind>("note");
   const [text, setText] = useState("");
 
@@ -110,6 +112,7 @@ export function AccountDetail() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="subtle" onClick={() => setEditOpen(true)}>Edit</Button>
             <Button variant="subtle" onClick={() => setLogOpen(true)}>Log activity</Button>
             <Button variant="primary">Message</Button>
           </div>
@@ -208,6 +211,8 @@ export function AccountDetail() {
           </div>
         </div>
       </div>
+
+      <EditAccountModal open={editOpen} onClose={() => setEditOpen(false)} account={account} />
 
       <Modal
         open={logOpen}

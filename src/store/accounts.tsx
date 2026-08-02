@@ -52,6 +52,7 @@ interface AccountsContextValue {
   accounts: Account[];
   getAccount: (code: string) => Account | undefined;
   addAccount: (input: NewAccountInput) => Account;
+  updateAccount: (code: string, patch: Partial<Account>) => void;
   logActivity: (code: string, event: TimelineEvent) => void;
   newAccountOpen: boolean;
   openNewAccount: () => void;
@@ -108,6 +109,12 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
     return created;
   }, []);
 
+  const updateAccount = useCallback((code: string, patch: Partial<Account>) => {
+    setAccounts((prev) =>
+      prev.map((a) => (a.code === code ? { ...a, ...patch } : a)),
+    );
+  }, []);
+
   const logActivity = useCallback((code: string, event: TimelineEvent) => {
     setAccounts((prev) =>
       prev.map((a) =>
@@ -121,12 +128,13 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
       accounts,
       getAccount,
       addAccount,
+      updateAccount,
       logActivity,
       newAccountOpen,
       openNewAccount: () => setNewAccountOpen(true),
       closeNewAccount: () => setNewAccountOpen(false),
     }),
-    [accounts, getAccount, addAccount, logActivity, newAccountOpen],
+    [accounts, getAccount, addAccount, updateAccount, logActivity, newAccountOpen],
   );
 
   return <AccountsContext.Provider value={value}>{children}</AccountsContext.Provider>;
