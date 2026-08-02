@@ -1,12 +1,19 @@
 -- ============================================================================
--- V8 CRM — Supabase schema
--- Run this once in your Supabase project: Dashboard → SQL Editor → New query →
--- paste → Run. The app upserts/deletes rows here; if this table is absent the
--- app silently falls back to local storage, so nothing breaks before you run it.
+-- V8 CRM — Supabase schema (v2, with auth)
+-- Run this once in Supabase → SQL Editor. Safe to re-run: it drops and recreates
+-- the accounts table, so any existing demo rows are cleared (the app re-seeds a
+-- signed-in user's book automatically on first load).
+--
+-- This version scopes every row to the authenticated user (owner_id = auth.uid())
+-- so each account only ever sees its own book. If the table is absent the app
+-- silently falls back to local storage, so nothing breaks before you run it.
 -- ============================================================================
 
-create table if not exists public.accounts (
-  code        text primary key,
+drop table if exists public.accounts cascade;
+
+create table public.accounts (
+  owner_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  code        text not null,
   name        text not null,
   vertical    text not null,
   stage       text not null,
@@ -20,29 +27,32 @@ create table if not exists public.accounts (
   next_step   text not null default '',
   contacts    jsonb not null default '[]'::jsonb,
   timeline    jsonb not null default '[]'::jsonb,
-  created_at  timestamptz not null default now()
+  created_at  timestamptz not null default now(),
+  primary key (owner_id, code)
 );
 
--- Keep newest-first ordering cheap.
-create index if not exists accounts_created_at_idx on public.accounts (created_at);
+create index accounts_owner_created_idx on public.accounts (owner_id, created_at);
 
--- Row Level Security ---------------------------------------------------------
--- The app currently has no sign-in, so it uses the public anon key. These
--- policies grant the anon role full access — fine for a single-tenant demo,
--- but OPEN to anyone with the anon key. Lock this down when you add Supabase
--- Auth: scope the policies to auth.uid() / an owner column instead.
+-- Row Level Security: each user reads and writes only their own rows ----------
 alter table public.accounts enable row level security;
 
-drop policy if exists "anon read accounts"   on public.accounts;
-drop policy if exists "anon write accounts"   on public.accounts;
-
-create policy "anon read accounts"
+create policy "own accounts read"
   on public.accounts for select
-  to anon, authenticated
-  using (true);
+  to authenticated
+  using (owner_id = auth.uid());
 
-create policy "anon write accounts"
-  on public.accounts for all
-  to anon, authenticated
-  using (true)
-  with check (true);
+create policy "own accounts insert"
+  on public.accounts for insert
+  to authenticated
+  with check (owner_id = auth.uid());
+
+create policy "own accounts update"
+  on public.accounts for update
+  to authenticated
+  using (owner_id = auth.uid())
+  with check (owner_id = auth.uid());
+
+create policy "own accounts delete"
+  on public.accounts for delete
+  to authenticated
+  using (owner_id = auth.uid());

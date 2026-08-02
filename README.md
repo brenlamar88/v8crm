@@ -86,7 +86,9 @@ To turn on the real backend:
 
 1. **Run the schema.** In your Supabase project → SQL Editor, paste and run
    [`supabase/schema.sql`](./supabase/schema.sql). It creates the `accounts`
-   table and (demo-open) RLS policies.
+   table with an `owner_id` and RLS scoped to `auth.uid()`, so every user only
+   sees their own book. (It drops/recreates the table — safe, since the app
+   re-seeds a user's book on first load.)
 2. **Env vars.** The Vercel Supabase integration already exposes the project URL
    and anon key; `vite.config.ts` bridges them to the client build, accepting
    `SUPABASE_URL` / `SUPABASE_ANON_KEY`, their `NEXT_PUBLIC_` variants, or
@@ -96,9 +98,18 @@ To turn on the real backend:
    live. Only the public **anon** key ever reaches the browser; the service-role
    key is never referenced.
 
-> Security note: the demo has no sign-in, so the RLS policies grant the anon key
-> full access — fine for a single-tenant demo, open otherwise. Add Supabase Auth
-> and scope the policies to `auth.uid()` before this holds real data.
+### Auth
+
+When Supabase is configured the app requires **email + password** sign-in
+(Supabase Auth) and gates the console behind a login; each user's data is
+isolated by the `owner_id` RLS policies. When Supabase is off, the app runs open
+as a local demo (no login). Sign out from the sidebar footer.
+
+- New users self-serve via **Create one** on the login screen. If your Supabase
+  project has email confirmation enabled (Auth → Providers → Email), they'll
+  confirm by email before the first sign-in; turn it off for instant demo access.
+- Magic-link / OAuth providers are a drop-in swap in `src/store/auth.tsx` if you
+  prefer those over passwords.
 
 ## Stack
 

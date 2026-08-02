@@ -89,10 +89,13 @@ export async function fetchAccounts(): Promise<Account[] | null> {
   return (data as AccountRow[]).map(fromRow);
 }
 
-/** Insert or update one account. Best-effort. */
+/** Insert or update one account. Best-effort. owner_id is defaulted to
+    auth.uid() server-side, so the conflict target is (owner_id, code). */
 export async function upsertAccount(account: Account): Promise<void> {
   if (!supabase) return;
-  const { error } = await supabase.from(TABLE).upsert(toRow(account), { onConflict: "code" });
+  const { error } = await supabase
+    .from(TABLE)
+    .upsert(toRow(account), { onConflict: "owner_id,code" });
   if (error) console.warn("[supabase] upsert failed:", error.message);
 }
 

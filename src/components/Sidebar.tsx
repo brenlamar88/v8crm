@@ -6,6 +6,7 @@
 import { NavLink } from "react-router-dom";
 import type { ComponentType, SVGProps } from "react";
 import { useNav } from "../app/nav.tsx";
+import { useAuth } from "../store/auth.tsx";
 import { BrandMark } from "./Brand.tsx";
 import {
   IconOverview,
@@ -94,6 +95,17 @@ function Item({ item }: { item: NavItem }) {
 
 export function Sidebar() {
   const { navOpen, setNavOpen } = useNav();
+  const { enabled, user, signOut } = useAuth();
+
+  // Signed in → show the account's email; local demo → the sample principal.
+  const email = user?.email ?? "";
+  const primaryName = enabled && user ? email : "Bren Roberts";
+  const secondary = enabled && user ? "Signed in" : "Principal · V8";
+  const initials =
+    enabled && user
+      ? (email[0] ?? "?").toUpperCase()
+      : "BR";
+
   return (
     <>
       {/* Scrim behind the mobile drawer. */}
@@ -138,12 +150,24 @@ export function Sidebar() {
       <div className="border-t border-[color:var(--v8-border)] p-3">
         <div className="flex items-center gap-3 rounded-md px-3 h-12 hover:bg-raised transition-colors duration-fast">
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent-600 text-label font-bold">
-            BR
+            {initials}
           </span>
-          <div className="min-w-0 leading-tight">
-            <div className="truncate text-body-sm font-semibold">Bren Roberts</div>
-            <div className="truncate text-micro text-text-muted">Principal · V8</div>
+          <div className="min-w-0 flex-1 leading-tight">
+            <div className="truncate text-body-sm font-semibold">{primaryName}</div>
+            <div className="truncate text-micro text-text-muted">{secondary}</div>
           </div>
+          {enabled && user && (
+            <button
+              onClick={() => void signOut()}
+              aria-label="Sign out"
+              title="Sign out"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-md text-text-muted hover:text-text hover:bg-overlay transition-colors duration-fast"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M15 12H4M8 8l-4 4 4 4M14 4h5a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-5" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
       </aside>
