@@ -76,11 +76,14 @@ whatever branch is set as the project's Production Branch — point that at `mai
 
 ## Backend (Supabase)
 
-The store is **local-first with a Supabase sync layer**. With no database
-configured it runs entirely on `localStorage` (the default, and how it runs
-locally). When the Supabase env vars are present it hydrates from Postgres on
-load and writes every mutation back. Any failure — missing table, network, RLS —
-silently falls back to local, so the app never breaks.
+The store is **Supabase-backed with a local cache**. This project ships with its
+Supabase URL + public anon key baked into `src/lib/supabase.ts` (the anon key is
+a browser key by design — the owner-scoped RLS is what protects the data), so the
+app is live out of the box; `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` env
+vars override it to point at a different project. It hydrates from Postgres on
+load and writes every mutation back, keeping `localStorage` as an offline cache.
+Any failure — missing table, network, RLS — silently falls back to local, so the
+app never breaks.
 
 To turn on the real backend:
 

@@ -7,8 +7,19 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Account, Contact, TimelineEvent } from "../data.ts";
 
-const url = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+/* Public client credentials for this project's Supabase. The anon key is meant
+   to be shipped to browsers — it already appears in the built bundle — and the
+   owner-scoped row-level-security policies are what actually protect the data.
+   Env vars (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY, bridged in vite.config
+   from Vercel) OVERRIDE these when present, so you can point at a different
+   project without a code change. To rotate: regenerate the anon key in Supabase
+   and update it here (or set the env vars). */
+const FALLBACK_URL = "https://jqcobwrrjwybrcvtjqxa.supabase.co";
+const FALLBACK_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxY29id3Jyand5YnJjdnRqcXhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU2NjMzMDEsImV4cCI6MjEwMTIzOTMwMX0.KsSJQpjdG0rKyQjkx_QyobpYT3x-OcEPiOlvvdacEPg";
+
+const url = (import.meta.env.VITE_SUPABASE_URL as string) || FALLBACK_URL;
+const anonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || FALLBACK_ANON_KEY;
 
 export const supabase: SupabaseClient | null =
   url && anonKey ? createClient(url, anonKey) : null;
