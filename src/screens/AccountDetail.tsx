@@ -12,6 +12,7 @@ import { Timeline } from "../components/Timeline.tsx";
 import { Modal } from "../components/Modal.tsx";
 import { Field, Select, Textarea } from "../components/forms.tsx";
 import { EditAccountModal } from "../components/EditAccountModal.tsx";
+import { useToast } from "../components/toast.tsx";
 import { Placeholder } from "./Placeholder.tsx";
 import { useAccounts } from "../store/accounts.tsx";
 import { type Account, type EngagementStage, type TimelineKind } from "../data.ts";
@@ -54,6 +55,7 @@ const ACTIVITY_KINDS: TimelineKind[] = ["note", "call", "email", "ship", "risk"]
 export function AccountDetail() {
   const { code = "" } = useParams();
   const { getAccount, logActivity } = useAccounts();
+  const toast = useToast();
   const account: Account | undefined = getAccount(code);
 
   const [logOpen, setLogOpen] = useState(false);
@@ -74,6 +76,7 @@ export function AccountDetail() {
     setText("");
     setKind("note");
     setLogOpen(false);
+    toast("Activity logged");
   }
 
   const initials = account.name.split(" ").slice(0, 2).map((w) => w[0]).join("");

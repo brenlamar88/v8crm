@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { Modal } from "./Modal.tsx";
 import { Button } from "./primitives.tsx";
 import { Field, Input, Select } from "./forms.tsx";
+import { useToast } from "./toast.tsx";
 import { useAccounts } from "../store/accounts.tsx";
 import type { EngagementStage } from "../data.ts";
 
@@ -17,6 +18,7 @@ const VERTICALS = ["Behavioral Health", "Field Operations", "Nonprofit", "Other"
 export function NewAccountModal() {
   const { newAccountOpen, closeNewAccount, addAccount } = useAccounts();
   const navigate = useNavigate();
+  const toast = useToast();
 
   const [name, setName] = useState("");
   const [vertical, setVertical] = useState(VERTICALS[0]);
@@ -46,6 +48,7 @@ export function NewAccountModal() {
     });
     close();
     navigate(`/accounts/${created.code}`);
+    toast(`${created.name} created`);
   }
 
   return (

@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { Modal } from "./Modal.tsx";
 import { Button } from "./primitives.tsx";
 import { Field, Input, Select, Textarea } from "./forms.tsx";
+import { useToast } from "./toast.tsx";
 import { useAccounts } from "../store/accounts.tsx";
 import type { Account, EngagementStage } from "../data.ts";
 
@@ -27,6 +28,7 @@ export function EditAccountModal({
   account: Account;
 }) {
   const { updateAccount } = useAccounts();
+  const toast = useToast();
 
   const [stage, setStage] = useState<EngagementStage>(account.stage);
   const [mrr, setMrr] = useState(String(account.mrr));
@@ -53,6 +55,7 @@ export function EditAccountModal({
       summary: summary.trim() || account.summary,
     });
     onClose();
+    toast("Changes saved");
   }
 
   return (

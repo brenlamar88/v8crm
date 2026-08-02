@@ -4,6 +4,7 @@
    ========================================================================== */
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AccountsProvider } from "./store/accounts.tsx";
+import { ToastProvider } from "./components/toast.tsx";
 import { AppShell } from "./app/AppShell.tsx";
 import { Overview } from "./screens/Overview.tsx";
 import { AccountsScreen } from "./screens/AccountsScreen.tsx";
@@ -18,6 +19,7 @@ import { Placeholder } from "./screens/Placeholder.tsx";
 export function App() {
   return (
     <BrowserRouter>
+      <ToastProvider>
       <AccountsProvider>
       <Routes>
         <Route element={<AppShell />}>
@@ -36,6 +38,7 @@ export function App() {
         </Route>
       </Routes>
       </AccountsProvider>
+      </ToastProvider>
     </BrowserRouter>
   );
 }
