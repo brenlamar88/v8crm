@@ -142,3 +142,44 @@
     --v8-dur-slow: 0ms;
   }
 }
+
+/* ----------------------------------------------------------------------------
+   Light theme — the same system, re-valued. Set data-theme="light" on the root
+   (Settings does this) and every surface, text, border, shadow, and status
+   color flips; the type scale, spacing, radius, and motion are untouched. This
+   is the payoff of a token-driven system: a second theme is a variable sheet,
+   not a rewrite. The accent ramp is left to the JS theming layer, which sets it
+   inline for both themes.
+   -------------------------------------------------------------------------- */
+:root[data-theme="light"] {
+  --v8-bg-base: #f6f6fb;
+  --v8-bg-sunken: #ecebf3;
+  --v8-surface: #ffffff;
+  --v8-surface-raised: #f1f0f7;
+  --v8-surface-overlay: #ffffff;
+
+  --v8-border: rgba(20, 18, 45, 0.1);
+  --v8-border-strong: rgba(20, 18, 45, 0.16);
+
+  --v8-text: #17151f;
+  --v8-text-secondary: #45434f;
+  --v8-text-muted: #6c6a7a;
+  --v8-text-faint: #a3a1b0;
+
+  /* Darker status shades so tints and text read on white. */
+  --v8-up: #059669;
+  --v8-up-soft: rgba(5, 150, 105, 0.12);
+  --v8-down: #e11d48;
+  --v8-down-soft: rgba(225, 29, 72, 0.12);
+  --v8-warn: #b45309;
+  --v8-warn-soft: rgba(180, 83, 9, 0.12);
+  --v8-info: #2563eb;
+
+  --v8-shadow-sm: 0 1px 2px rgba(20, 18, 45, 0.08);
+  --v8-shadow-md: 0 6px 20px -6px rgba(20, 18, 45, 0.14);
+  --v8-shadow-lg: 0 20px 48px -14px rgba(30, 20, 70, 0.2);
+
+  --v8-scrim: rgba(20, 18, 35, 0.35);
+  --v8-glass: rgba(246, 246, 251, 0.82);
+  --v8-well: rgba(20, 18, 45, 0.04);
+}

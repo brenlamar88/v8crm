@@ -1,10 +1,11 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { App } from "./App.tsx";
-import { applyAccent, getSavedAccent } from "./lib/theme.ts";
+import { applyAccent, applyMode, getSavedAccent, getSavedMode } from "./lib/theme.ts";
 import "./index.css";
 
-// Re-theme the console to the saved accent before the first render.
+// Apply the saved theme (light/dark) and accent before the first render.
+applyMode(getSavedMode());
 applyAccent(getSavedAccent());
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

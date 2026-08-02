@@ -54,6 +54,27 @@ export const ACCENTS: AccentPreset[] = [
 const STORE_KEY = "v8crm.accent";
 export const DEFAULT_ACCENT = "violet";
 
+/* --- Light / dark mode ---------------------------------------------------- */
+export type Mode = "dark" | "light";
+const MODE_KEY = "v8crm.mode";
+export const DEFAULT_MODE: Mode = "dark";
+
+export function getSavedMode(): Mode {
+  if (typeof window === "undefined") return DEFAULT_MODE;
+  return window.localStorage.getItem(MODE_KEY) === "light" ? "light" : "dark";
+}
+
+/** Apply a mode by toggling the root data-theme attribute (dark is the bare
+    :root default, so it clears the attribute). */
+export function applyMode(mode: Mode, persist = false): void {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  if (mode === "light") root.setAttribute("data-theme", "light");
+  else root.removeAttribute("data-theme");
+  root.style.colorScheme = mode;
+  if (persist) window.localStorage.setItem(MODE_KEY, mode);
+}
+
 export function getSavedAccent(): string {
   if (typeof window === "undefined") return DEFAULT_ACCENT;
   return window.localStorage.getItem(STORE_KEY) ?? DEFAULT_ACCENT;

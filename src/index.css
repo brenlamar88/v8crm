@@ -31,6 +31,13 @@
     background-attachment: fixed;
   }
 
+  /* Softer aura on the light canvas. */
+  :root[data-theme="light"] body {
+    background-image:
+      radial-gradient(60rem 40rem at 15% -10%, rgba(124, 92, 255, 0.06), transparent 60%),
+      radial-gradient(50rem 40rem at 110% 10%, rgba(90, 60, 220, 0.05), transparent 55%);
+  }
+
   /* Numerics line up in tables and metrics — a small thing that reads as rigor. */
   .tabular {
     font-variant-numeric: tabular-nums;

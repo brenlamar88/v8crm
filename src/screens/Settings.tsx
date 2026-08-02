@@ -7,7 +7,7 @@ import { useState } from "react";
 import { Topbar } from "../components/Topbar.tsx";
 import { Button, Badge } from "../components/primitives.tsx";
 import { Field, Input } from "../components/forms.tsx";
-import { ACCENTS, applyAccent, getSavedAccent } from "../lib/theme.ts";
+import { ACCENTS, applyAccent, applyMode, getSavedAccent, getSavedMode, type Mode } from "../lib/theme.ts";
 
 function Card({ title, desc, children }: { title: string; desc: string; children: React.ReactNode }) {
   return (
@@ -21,10 +21,16 @@ function Card({ title, desc, children }: { title: string; desc: string; children
 
 export function Settings() {
   const [accent, setAccent] = useState(getSavedAccent());
+  const [mode, setMode] = useState<Mode>(getSavedMode());
 
   function pick(id: string) {
     setAccent(id);
     applyAccent(id, true);
+  }
+
+  function pickMode(m: Mode) {
+    setMode(m);
+    applyMode(m, true);
   }
 
   function resetData() {
@@ -38,7 +44,27 @@ export function Settings() {
       <Topbar title="Settings" subtitle="Workspace & appearance" />
       <div className="px-6 py-6">
         <div className="mx-auto flex max-w-[820px] flex-col gap-4">
-          <Card title="Appearance" desc="Set the console's signal color. The whole app re-themes instantly from the accent tokens.">
+          <Card title="Appearance" desc="Theme and signal color. The whole app re-themes instantly from the tokens — nothing is hard-coded.">
+            <div className="mb-6">
+              <div className="eyebrow mb-3">Theme</div>
+              <div className="inline-flex rounded-md border border-[color:var(--v8-border)] bg-sunken p-1">
+                {(["dark", "light"] as Mode[]).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => pickMode(m)}
+                    aria-pressed={mode === m}
+                    className={[
+                      "h-8 min-w-20 rounded-sm px-4 text-label font-semibold capitalize transition-colors duration-fast ease-out",
+                      mode === m ? "bg-accent-soft text-accent-200" : "text-text-muted hover:text-text-secondary",
+                    ].join(" ")}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="eyebrow mb-3">Accent</div>
             <div className="flex flex-wrap gap-3">
               {ACCENTS.map((a) => {
                 const active = a.id === accent;
