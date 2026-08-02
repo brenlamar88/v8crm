@@ -76,6 +76,7 @@ function SpaceRow({ token, px }: { token: string; px: number }) {
 
 export function StyleGuide() {
   const [range, setRange] = useState("1D");
+  const [demoRange, setDemoRange] = useState("1D");
   const [demoOpen, setDemoOpen] = useState(false);
 
   return (
@@ -194,7 +195,7 @@ export function StyleGuide() {
                 <div>
                   <span className="eyebrow">Segmented control · 220ms slide</span>
                   <div className="mt-3">
-                    <SegmentedControl options={["1H", "1D", "1W", "1M", "1Y"]} value={range === "1Q" ? "1M" : range} onChange={setRange} />
+                    <SegmentedControl options={["1H", "1D", "1W", "1M", "1Y"]} value={demoRange} onChange={setDemoRange} />
                   </div>
                 </div>
                 <div>

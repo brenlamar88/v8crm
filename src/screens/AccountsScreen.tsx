@@ -16,7 +16,7 @@ export function AccountsScreen() {
 
   const rows = useMemo(
     () => (filter === "All" ? accounts : accounts.filter((a) => a.stage === filter)),
-    [filter],
+    [filter, accounts],
   );
 
   const mrr = accounts.reduce((s, a) => s + a.mrr, 0);
