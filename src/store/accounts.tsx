@@ -11,6 +11,7 @@ import {
   type Account,
   type Contact,
   type EngagementStage,
+  type Task,
   type TimelineEvent,
 } from "../data.ts";
 import {
@@ -68,6 +69,7 @@ interface AccountsContextValue {
   addContact: (code: string, contact: Contact) => void;
   removeContact: (code: string, email: string) => void;
   addTask: (code: string, title: string, dueDate: string, assignee?: string) => void;
+  updateTask: (code: string, taskId: string, patch: Partial<Task>) => void;
   toggleTask: (code: string, taskId: string) => void;
   removeTask: (code: string, taskId: string) => void;
   logActivity: (code: string, event: TimelineEvent) => void;
@@ -255,6 +257,18 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
     [accounts, writeTasks],
   );
 
+  const updateTask = useCallback(
+    (code: string, taskId: string, patch: Partial<Task>) => {
+      const current = accounts.find((a) => a.code === code);
+      if (!current) return;
+      writeTasks(
+        code,
+        current.tasks.map((t) => (t.id === taskId ? { ...t, ...patch } : t)),
+      );
+    },
+    [accounts, writeTasks],
+  );
+
   const toggleTask = useCallback(
     (code: string, taskId: string) => {
       const current = accounts.find((a) => a.code === code);
@@ -297,6 +311,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
       addContact,
       removeContact,
       addTask,
+      updateTask,
       toggleTask,
       removeTask,
       logActivity,
@@ -304,7 +319,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
       openNewAccount: () => setNewAccountOpen(true),
       closeNewAccount: () => setNewAccountOpen(false),
     }),
-    [accounts, getAccount, addAccount, updateAccount, removeAccount, addContact, removeContact, addTask, toggleTask, removeTask, logActivity, newAccountOpen],
+    [accounts, getAccount, addAccount, updateAccount, removeAccount, addContact, removeContact, addTask, updateTask, toggleTask, removeTask, logActivity, newAccountOpen],
   );
 
   return <AccountsContext.Provider value={value}>{children}</AccountsContext.Provider>;

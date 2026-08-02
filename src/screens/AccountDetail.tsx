@@ -17,7 +17,7 @@ import { useToast } from "../components/toast.tsx";
 import { Placeholder } from "./Placeholder.tsx";
 import { useAccounts } from "../store/accounts.tsx";
 import { useWorkspace } from "../store/workspace.tsx";
-import { type Account, type EngagementStage, type TimelineKind, dueLabel, dueStatus } from "../data.ts";
+import { type Account, type EngagementStage, type TimelineKind, dueStatus } from "../data.ts";
 
 const stageTone: Record<EngagementStage, Parameters<typeof Badge>[0]["tone"]> = {
   Discovery: "neutral",
@@ -56,7 +56,7 @@ const ACTIVITY_KINDS: TimelineKind[] = ["note", "call", "email", "ship", "risk"]
 
 export function AccountDetail() {
   const { code = "" } = useParams();
-  const { getAccount, logActivity, removeAccount, addContact, removeContact, addTask, toggleTask, removeTask } = useAccounts();
+  const { getAccount, logActivity, removeAccount, addContact, removeContact, addTask, updateTask, toggleTask, removeTask } = useAccounts();
   const toast = useToast();
   const navigate = useNavigate();
   const account: Account | undefined = getAccount(code);
@@ -285,23 +285,45 @@ export function AccountDetail() {
                     >
                       {t.title}
                     </span>
-                    {dueLabel(t) && (
-                      <span
+                    {/* Editable due date — a native picker styled to read like
+                        a label, tinted when overdue / due today. */}
+                    <label className="relative shrink-0">
+                      <input
+                        type="date"
+                        value={t.dueDate ?? ""}
+                        onChange={(e) => updateTask(code, t.id, { dueDate: e.target.value, due: "" })}
+                        aria-label="Due date"
                         className={[
-                          "tabular shrink-0 text-label",
+                          "tabular w-32 rounded-sm border bg-transparent px-2 h-7 text-label transition-colors duration-fast",
+                          "hover:border-[color:var(--v8-border-strong)] focus:border-accent focus:outline-none",
                           t.done
-                            ? "text-text-faint"
+                            ? "border-transparent text-text-faint"
                             : dueStatus(t) === "overdue"
-                              ? "font-semibold text-down"
+                              ? "border-[color:var(--v8-down)] font-semibold text-down"
                               : dueStatus(t) === "today"
-                                ? "font-semibold text-warn"
-                                : "text-text-muted",
+                                ? "border-[color:var(--v8-warn)] font-semibold text-warn"
+                                : "border-[color:var(--v8-border)] text-text-muted",
                         ].join(" ")}
-                      >
-                        {dueLabel(t)}
-                      </span>
+                      />
+                    </label>
+                    {teamEnabled && members.length > 0 && (
+                      <label className="relative shrink-0" title="Assignee">
+                        <AssigneeChip email={t.assignee} size={22} />
+                        <select
+                          value={t.assignee ?? ""}
+                          onChange={(e) => updateTask(code, t.id, { assignee: e.target.value || undefined })}
+                          aria-label="Assignee"
+                          className="absolute inset-0 cursor-pointer opacity-0"
+                        >
+                          <option value="">Unassigned</option>
+                          {members.map((m) => (
+                            <option key={m.user_id} value={m.email}>
+                              {m.email}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
                     )}
-                    {teamEnabled && <AssigneeChip email={t.assignee} size={22} />}
                     <button
                       onClick={() => removeTask(code, t.id)}
                       aria-label="Delete task"
