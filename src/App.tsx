@@ -10,6 +10,7 @@ import { ToastProvider } from "./components/toast.tsx";
 import { BrandMark } from "./components/Brand.tsx";
 import { AppShell } from "./app/AppShell.tsx";
 import { Login } from "./screens/Login.tsx";
+import { UpdatePassword } from "./screens/UpdatePassword.tsx";
 import { Overview } from "./screens/Overview.tsx";
 import { AccountsScreen } from "./screens/AccountsScreen.tsx";
 import { AccountDetail } from "./screens/AccountDetail.tsx";
@@ -47,7 +48,7 @@ function ConsoleRoutes() {
    Login screen when auth is on and nobody's signed in, else the console. When
    Supabase is off, `enabled` is false and it always renders the console. */
 function AuthGate() {
-  const { enabled, user, loading } = useAuth();
+  const { enabled, user, loading, recovery } = useAuth();
 
   if (enabled && loading) {
     return (
@@ -58,6 +59,9 @@ function AuthGate() {
       </div>
     );
   }
+
+  // Arrived from a reset email → set a new password before anything else.
+  if (enabled && recovery) return <UpdatePassword />;
 
   if (enabled && !user) return <Login />;
 
