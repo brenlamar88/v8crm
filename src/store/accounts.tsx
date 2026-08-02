@@ -21,7 +21,7 @@ import {
   seedIfEmpty,
   subscribeToAccounts,
 } from "../lib/supabase.ts";
-import { useAuth } from "./auth.tsx";
+import { useWorkspace } from "./workspace.tsx";
 import { useToast } from "../components/toast.tsx";
 
 /* Persistence — accounts survive a refresh via localStorage. The stored blob
@@ -91,7 +91,11 @@ function nextCode(list: Account[]): string {
 export function AccountsProvider({ children }: { children: ReactNode }) {
   const [accounts, setAccounts] = useState<Account[]>(loadAccounts);
   const [newAccountOpen, setNewAccountOpen] = useState(false);
-  const userId = useAuth().user?.id;
+  const currentWorkspace = useWorkspace().currentId;
+  // Latest workspace id for the fire-and-forget sync writes, without adding it
+  // to every mutation's dependency list.
+  const wsRef = useRef<string | null>(currentWorkspace);
+  wsRef.current = currentWorkspace;
   const toast = useToast();
 
   // Watch background sync results; toast only on the transition to/from offline
@@ -112,31 +116,32 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
     [toast],
   );
 
-  // Hydrate from Supabase when configured, re-running if the signed-in user
-  // changes. Remote rows win; an empty table is seeded from what we have
-  // locally; any failure (missing table, network, RLS) leaves local untouched.
+  // Hydrate the current workspace's book from Supabase, re-running when the
+  // workspace changes. Remote rows win; a genuinely empty workspace is seeded
+  // with the samples; any failure leaves local untouched.
   useEffect(() => {
-    if (!isSupabaseEnabled) return;
+    if (!isSupabaseEnabled || !currentWorkspace) return;
     let cancelled = false;
     (async () => {
-      const remote = await fetchAccounts();
+      const remote = await fetchAccounts(currentWorkspace);
       if (cancelled) return;
       if (remote && remote.length > 0) {
         setAccounts(remote);
       } else if (remote) {
-        await seedIfEmpty(loadAccounts());
+        await seedIfEmpty(seedAccounts, currentWorkspace);
+        setAccounts(seedAccounts);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, [currentWorkspace]);
 
-  // Live sync: merge row changes from other tabs/devices for this owner. Our
-  // own writes echo back too, but re-applying the same row is idempotent.
+  // Live sync: merge row changes from other members/devices for this workspace.
+  // Our own writes echo back too, but re-applying the same row is idempotent.
   useEffect(() => {
-    if (!isSupabaseEnabled || !userId) return;
-    return subscribeToAccounts(userId, (change) => {
+    if (!isSupabaseEnabled || !currentWorkspace) return;
+    return subscribeToAccounts(currentWorkspace, (change) => {
       setAccounts((prev) => {
         if (change.type === "delete") {
           return prev.filter((a) => a.code !== change.code);
@@ -147,7 +152,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
           : [change.account, ...prev];
       });
     });
-  }, [userId]);
+  }, [currentWorkspace]);
 
   // Cache the book locally on every change — offline fallback + instant boot.
   useEffect(() => {
@@ -179,7 +184,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
         tasks: [],
       };
       setAccounts([created, ...accounts]);
-      trackSync(upsertAccount(created));
+      trackSync(upsertAccount(created, wsRef.current ?? ""));
       return created;
     },
     [accounts],
@@ -191,7 +196,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
       if (!current) return;
       const merged = { ...current, ...patch };
       setAccounts(accounts.map((a) => (a.code === code ? merged : a)));
-      trackSync(upsertAccount(merged));
+      trackSync(upsertAccount(merged, wsRef.current ?? ""));
     },
     [accounts],
   );
@@ -199,7 +204,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
   const removeAccount = useCallback(
     (code: string) => {
       setAccounts(accounts.filter((a) => a.code !== code));
-      trackSync(deleteAccountRow(code));
+      trackSync(deleteAccountRow(code, wsRef.current ?? ""));
     },
     [accounts],
   );
@@ -210,7 +215,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
       if (!current) return;
       const merged = { ...current, contacts: [...current.contacts, contact] };
       setAccounts(accounts.map((a) => (a.code === code ? merged : a)));
-      trackSync(upsertAccount(merged));
+      trackSync(upsertAccount(merged, wsRef.current ?? ""));
     },
     [accounts],
   );
@@ -221,7 +226,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
       if (!current) return;
       const merged = { ...current, contacts: current.contacts.filter((c) => c.email !== email) };
       setAccounts(accounts.map((a) => (a.code === code ? merged : a)));
-      trackSync(upsertAccount(merged));
+      trackSync(upsertAccount(merged, wsRef.current ?? ""));
     },
     [accounts],
   );
@@ -232,7 +237,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
       if (!current) return;
       const merged = { ...current, tasks };
       setAccounts(accounts.map((a) => (a.code === code ? merged : a)));
-      trackSync(upsertAccount(merged));
+      trackSync(upsertAccount(merged, wsRef.current ?? ""));
     },
     [accounts],
   );
@@ -274,7 +279,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
       if (!current) return;
       const merged = { ...current, timeline: [event, ...current.timeline] };
       setAccounts(accounts.map((a) => (a.code === code ? merged : a)));
-      trackSync(upsertAccount(merged));
+      trackSync(upsertAccount(merged, wsRef.current ?? ""));
     },
     [accounts],
   );

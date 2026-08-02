@@ -4,10 +4,11 @@
    signal bar. Built on NavLink so routing state drives the active style.
    -------------------------------------------------------------------------- */
 import { NavLink } from "react-router-dom";
-import type { ComponentType, SVGProps } from "react";
+import { useEffect, useRef, useState, type ComponentType, type SVGProps } from "react";
 import { useNav } from "../app/nav.tsx";
 import { useAuth } from "../store/auth.tsx";
 import { useAccounts } from "../store/accounts.tsx";
+import { useWorkspace } from "../store/workspace.tsx";
 import { BrandMark } from "./Brand.tsx";
 import {
   IconOverview,
@@ -99,6 +100,134 @@ function Item({ item }: { item: NavItem }) {
   );
 }
 
+/* Workspace switcher — a dropdown listing the teams the user belongs to, with a
+   quick "New workspace" action. Only rendered when Supabase (and therefore
+   teams) is on; a no-op otherwise. */
+function WorkspaceSwitcher() {
+  const { enabled, workspaces, current, setCurrent, createWorkspace } = useWorkspace();
+  const [open, setOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [name, setName] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  if (!enabled) return null;
+
+  const submit = async () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    await createWorkspace(trimmed);
+    setName("");
+    setCreating(false);
+    setOpen(false);
+  };
+
+  return (
+    <div ref={ref} className="relative px-3 pt-3">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-center gap-2.5 rounded-md border border-[color:var(--v8-border)] bg-raised px-3 h-11 text-left hover:border-[color:var(--v8-border-strong)] transition-colors duration-fast"
+      >
+        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-sm bg-accent-600 text-micro font-bold">
+          {(current?.name.trim()[0] ?? "W").toUpperCase()}
+        </span>
+        <span className="min-w-0 flex-1 leading-tight">
+          <span className="block truncate text-body-sm font-semibold">{current?.name ?? "Workspace"}</span>
+          <span className="block truncate text-micro text-text-muted capitalize">{current?.role ?? "member"}</span>
+        </span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-text-muted" aria-hidden>
+          <path d="m7 9 5 5 5-5" />
+        </svg>
+      </button>
+
+      {open && (
+        <div className="absolute left-3 right-3 top-full z-50 mt-1 rounded-md border border-[color:var(--v8-border-strong)] bg-overlay p-1 shadow-lg animate-fade-rise" style={{ animationDuration: "var(--v8-dur-fast)" }}>
+          <div className="max-h-56 overflow-y-auto">
+            {workspaces.map((w) => (
+              <button
+                key={w.id}
+                onClick={() => {
+                  setCurrent(w.id);
+                  setOpen(false);
+                }}
+                className="flex w-full items-center gap-2.5 rounded-sm px-2.5 h-9 text-left hover:bg-raised transition-colors duration-fast"
+              >
+                <span className="grid h-5 w-5 shrink-0 place-items-center rounded-sm bg-accent-600 text-micro font-bold">
+                  {(w.name.trim()[0] ?? "W").toUpperCase()}
+                </span>
+                <span className="min-w-0 flex-1 truncate text-body-sm">{w.name}</span>
+                {current?.id === w.id && (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-accent-400" aria-hidden>
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                )}
+              </button>
+            ))}
+          </div>
+
+          <div className="my-1 h-px bg-[color:var(--v8-border)]" />
+
+          {creating ? (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void submit();
+              }}
+              className="p-1"
+            >
+              <input
+                autoFocus
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Workspace name"
+                className="w-full rounded-sm border border-[color:var(--v8-border-strong)] bg-sunken px-2.5 h-8 text-body-sm outline-none focus:border-accent transition-colors duration-fast"
+              />
+              <div className="mt-1 flex gap-1">
+                <button
+                  type="submit"
+                  className="flex-1 rounded-sm bg-accent-600 h-8 text-label font-semibold hover:bg-accent-500 transition-colors duration-fast"
+                >
+                  Create
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreating(false);
+                    setName("");
+                  }}
+                  className="rounded-sm px-3 h-8 text-label font-semibold text-text-secondary hover:bg-raised transition-colors duration-fast"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          ) : (
+            <button
+              onClick={() => setCreating(true)}
+              className="flex w-full items-center gap-2.5 rounded-sm px-2.5 h-9 text-left text-text-secondary hover:bg-raised hover:text-text transition-colors duration-fast"
+            >
+              <span className="grid h-5 w-5 shrink-0 place-items-center rounded-sm border border-dashed border-[color:var(--v8-border-strong)] text-text-muted">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden>
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+              </span>
+              <span className="text-body-sm font-medium">New workspace</span>
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Sidebar() {
   const { navOpen, setNavOpen } = useNav();
   const { enabled, user, profile, signOut } = useAuth();
@@ -144,6 +273,8 @@ export function Sidebar() {
           </div>
         </div>
       </div>
+
+      <WorkspaceSwitcher />
 
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         {groups.map((g, i) => (

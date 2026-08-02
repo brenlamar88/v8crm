@@ -8,8 +8,19 @@ import { Topbar } from "../components/Topbar.tsx";
 import { Button, Badge } from "../components/primitives.tsx";
 import { Field, Input } from "../components/forms.tsx";
 import { ACCENTS, applyAccent, applyMode, getSavedAccent, getSavedMode, type Mode } from "../lib/theme.ts";
-import { isSupabaseEnabled, uploadAvatar } from "../lib/supabase.ts";
+import {
+  isSupabaseEnabled,
+  uploadAvatar,
+  fetchMembers,
+  removeMember,
+  fetchInvitations,
+  inviteMember,
+  revokeInvitation,
+  type Member,
+  type Invitation,
+} from "../lib/supabase.ts";
 import { useAuth } from "../store/auth.tsx";
+import { useWorkspace } from "../store/workspace.tsx";
 import { useToast } from "../components/toast.tsx";
 import { useRef } from "react";
 
@@ -20,6 +31,169 @@ function Card({ title, desc, children }: { title: string; desc: string; children
       <p className="mt-1 text-body-sm text-text-muted">{desc}</p>
       <div className="mt-5">{children}</div>
     </section>
+  );
+}
+
+/* Team card — members of the current workspace, invite-by-email, and pending
+   invitations. Owners can rename the workspace, invite, remove members, and
+   revoke invitations; members see a read-only roster. Only shown when Supabase
+   is on. */
+function TeamCard() {
+  const { current, rename } = useWorkspace();
+  const { user } = useAuth();
+  const toast = useToast();
+  const workspaceId = current?.id ?? "";
+  const isOwner = current?.role === "owner";
+
+  const [members, setMembers] = useState<Member[]>([]);
+  const [invites, setInvites] = useState<Invitation[]>([]);
+  const [email, setEmail] = useState("");
+  const [inviting, setInviting] = useState(false);
+  const [wsName, setWsName] = useState(current?.name ?? "");
+
+  useEffect(() => {
+    setWsName(current?.name ?? "");
+  }, [current?.name]);
+
+  const refresh = async () => {
+    if (!workspaceId) return;
+    const [m, i] = await Promise.all([fetchMembers(workspaceId), fetchInvitations(workspaceId)]);
+    setMembers(m);
+    setInvites(i);
+  };
+
+  useEffect(() => {
+    void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceId]);
+
+  async function saveName() {
+    const trimmed = wsName.trim();
+    if (!trimmed || trimmed === current?.name) return;
+    await rename(workspaceId, trimmed);
+    toast("Workspace renamed");
+  }
+
+  async function sendInvite() {
+    const addr = email.trim().toLowerCase();
+    if (!addr) return;
+    setInviting(true);
+    const err = await inviteMember(workspaceId, addr);
+    setInviting(false);
+    if (err) {
+      toast(/duplicate|unique/i.test(err) ? "Already invited or a member" : "Couldn't send invite", "warn");
+      return;
+    }
+    setEmail("");
+    toast(`Invited ${addr}`);
+    void refresh();
+  }
+
+  async function drop(userId: string) {
+    await removeMember(workspaceId, userId);
+    toast("Member removed");
+    void refresh();
+  }
+
+  async function revoke(id: string) {
+    await revokeInvitation(id);
+    void refresh();
+  }
+
+  return (
+    <Card title="Team" desc="Everyone who shares this workspace's book. Invite teammates by email — they join the moment they sign in.">
+      {isOwner && (
+        <div className="mb-6">
+          <div className="eyebrow mb-3">Workspace name</div>
+          <div className="flex gap-3">
+            <Input value={wsName} onChange={(e) => setWsName(e.target.value)} placeholder="Workspace name" />
+            <Button variant="subtle" onClick={saveName} disabled={!wsName.trim() || wsName.trim() === current?.name}>
+              Rename
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <div className="eyebrow mb-3">Members</div>
+      <div className="flex flex-col divide-y divide-[color:var(--v8-border)] rounded-md border border-[color:var(--v8-border)]">
+        {members.length === 0 ? (
+          <div className="px-4 py-3 text-body-sm text-text-muted">Loading members…</div>
+        ) : (
+          members.map((m) => (
+            <div key={m.user_id} className="flex items-center gap-3 px-4 py-3">
+              <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-accent-600 text-label font-bold">
+                {(m.email.trim()[0] ?? "?").toUpperCase()}
+              </span>
+              <div className="min-w-0 flex-1 leading-tight">
+                <div className="truncate text-body-sm font-medium">
+                  {m.email}
+                  {m.user_id === user?.id && <span className="text-text-muted"> · you</span>}
+                </div>
+                <div className="text-micro text-text-muted capitalize">{m.role}</div>
+              </div>
+              {m.role === "owner" ? (
+                <Badge tone="accent" dot={false}>Owner</Badge>
+              ) : (
+                isOwner && (
+                  <button
+                    onClick={() => void drop(m.user_id)}
+                    className="rounded-sm px-2 h-7 text-label font-semibold text-text-muted hover:text-down hover:bg-raised transition-colors duration-fast"
+                  >
+                    Remove
+                  </button>
+                )
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {isOwner && (
+        <>
+          <div className="eyebrow mb-3 mt-6">Invite a teammate</div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void sendInvite();
+            }}
+            className="flex gap-3"
+          >
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="teammate@company.com"
+            />
+            <Button variant="primary" type="submit" disabled={!email.trim() || inviting}>
+              {inviting ? "Sending…" : "Send invite"}
+            </Button>
+          </form>
+
+          {invites.length > 0 && (
+            <>
+              <div className="eyebrow mb-3 mt-6">Pending invitations</div>
+              <div className="flex flex-col divide-y divide-[color:var(--v8-border)] rounded-md border border-[color:var(--v8-border)]">
+                {invites.map((inv) => (
+                  <div key={inv.id} className="flex items-center gap-3 px-4 py-3">
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-raised text-label font-bold text-text-muted">
+                      {(inv.email.trim()[0] ?? "?").toUpperCase()}
+                    </span>
+                    <div className="min-w-0 flex-1 truncate text-body-sm">{inv.email}</div>
+                    <Badge tone="neutral" dot={false}>Invited</Badge>
+                    <button
+                      onClick={() => void revoke(inv.id)}
+                      className="rounded-sm px-2 h-7 text-label font-semibold text-text-muted hover:text-down hover:bg-raised transition-colors duration-fast"
+                    >
+                      Revoke
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </>
+      )}
+    </Card>
   );
 }
 
@@ -192,6 +366,8 @@ export function Settings() {
               <Button variant="primary" onClick={saveProfileForm} disabled={!enabled}>Save profile</Button>
             </div>
           </Card>
+
+          {isSupabaseEnabled && <TeamCard />}
 
           <Card title="Data" desc="Where your book is stored and how to reset it.">
             <div className="mb-5 flex items-center gap-3">

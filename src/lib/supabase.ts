@@ -156,13 +156,14 @@ function fromRow(r: AccountRow): Account {
   };
 }
 
-/** Fetch the whole book. Returns null on any failure (missing table, network,
-    RLS) so the caller keeps its local data. */
-export async function fetchAccounts(): Promise<Account[] | null> {
+/** Fetch a workspace's book. Returns null on any failure so the caller keeps
+    local data. Accounts are scoped to the workspace (RLS also enforces this). */
+export async function fetchAccounts(workspaceId: string): Promise<Account[] | null> {
   if (!supabase) return null;
   const { data, error } = await supabase
     .from(TABLE)
     .select("*")
+    .eq("workspace_id", workspaceId)
     .order("created_at", { ascending: true });
   if (error) {
     console.warn("[supabase] fetch failed, using local data:", error.message);
@@ -171,22 +172,25 @@ export async function fetchAccounts(): Promise<Account[] | null> {
   return (data as AccountRow[]).map(fromRow);
 }
 
-/** Insert or update one account. owner_id is defaulted to auth.uid() server-side,
-    so the conflict target is (owner_id, code). Returns true on success (or when
-    Supabase is off — nothing to sync), false when the write didn't reach the DB. */
-export async function upsertAccount(account: Account): Promise<boolean> {
+/** Insert or update one account in a workspace. Conflict target is
+    (workspace_id, code). Returns true on success (or Supabase-off). */
+export async function upsertAccount(account: Account, workspaceId: string): Promise<boolean> {
   if (!supabase) return true;
   const { error } = await supabase
     .from(TABLE)
-    .upsert(toRow(account), { onConflict: "owner_id,code" });
+    .upsert({ ...toRow(account), workspace_id: workspaceId }, { onConflict: "workspace_id,code" });
   if (error) console.warn("[supabase] upsert failed:", error.message);
   return !error;
 }
 
-/** Remove one account. Returns true on success (or Supabase-off), false on failure. */
-export async function deleteAccountRow(code: string): Promise<boolean> {
+/** Remove one account from a workspace. */
+export async function deleteAccountRow(code: string, workspaceId: string): Promise<boolean> {
   if (!supabase) return true;
-  const { error } = await supabase.from(TABLE).delete().eq("code", code);
+  const { error } = await supabase
+    .from(TABLE)
+    .delete()
+    .eq("workspace_id", workspaceId)
+    .eq("code", code);
   if (error) console.warn("[supabase] delete failed:", error.message);
   return !error;
 }
@@ -195,18 +199,17 @@ export type AccountChange =
   | { type: "upsert"; account: Account }
   | { type: "delete"; code: string };
 
-/** Subscribe to live row changes for one owner's accounts. Returns an
-    unsubscribe fn; a no-op when Supabase is off. */
+/** Subscribe to live row changes for a workspace's accounts. */
 export function subscribeToAccounts(
-  ownerId: string,
+  workspaceId: string,
   onChange: (change: AccountChange) => void,
 ): () => void {
   if (!supabase) return () => {};
   const channel = supabase
-    .channel(`accounts-${ownerId}`)
+    .channel(`accounts-${workspaceId}`)
     .on(
       "postgres_changes",
-      { event: "*", schema: "public", table: TABLE, filter: `owner_id=eq.${ownerId}` },
+      { event: "*", schema: "public", table: TABLE, filter: `workspace_id=eq.${workspaceId}` },
       (payload) => {
         if (payload.eventType === "DELETE") {
           const code = (payload.old as Partial<AccountRow>).code;
@@ -222,13 +225,135 @@ export function subscribeToAccounts(
   };
 }
 
-/** Seed the table from the bundled accounts if it's currently empty. */
-export async function seedIfEmpty(seed: Account[]): Promise<void> {
+/** Seed a workspace's book from the bundled accounts if it's currently empty. */
+export async function seedIfEmpty(seed: Account[], workspaceId: string): Promise<void> {
   if (!supabase) return;
   const { count, error } = await supabase
     .from(TABLE)
-    .select("code", { count: "exact", head: true });
+    .select("code", { count: "exact", head: true })
+    .eq("workspace_id", workspaceId);
   if (error || (count ?? 0) > 0) return;
-  const { error: insErr } = await supabase.from(TABLE).insert(seed.map(toRow));
+  const rows = seed.map((a) => ({ ...toRow(a), workspace_id: workspaceId }));
+  const { error: insErr } = await supabase.from(TABLE).insert(rows);
   if (insErr) console.warn("[supabase] seed failed:", insErr.message);
+}
+
+/* --- Workspaces / teams --------------------------------------------------- */
+
+export interface Workspace {
+  id: string;
+  name: string;
+  role: string;
+}
+
+export interface Member {
+  user_id: string;
+  email: string;
+  role: string;
+}
+
+/** Turn any pending invitations for the signed-in email into memberships. */
+export async function acceptInvitations(): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.rpc("accept_invitations");
+  if (error) console.warn("[supabase] accept_invitations:", error.message);
+}
+
+/** Create a workspace (with the caller as owner). Returns its id. */
+export async function createWorkspace(name: string): Promise<string | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.rpc("create_workspace", { ws_name: name });
+  if (error) {
+    console.warn("[supabase] create_workspace:", error.message);
+    return null;
+  }
+  return data as string;
+}
+
+/** The workspaces the signed-in user belongs to, with their role in each. */
+export async function fetchWorkspaces(userId: string): Promise<Workspace[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("memberships")
+    .select("role, workspace_id, workspaces(name)")
+    .eq("user_id", userId);
+  if (error) {
+    console.warn("[supabase] fetchWorkspaces:", error.message);
+    return [];
+  }
+  return (data ?? []).map((r) => {
+    // The embedded `workspaces` relation may type as an object or a single-row
+    // array depending on the client's inference; normalize both.
+    const row = r as unknown as {
+      role: string;
+      workspace_id: string;
+      workspaces: { name: string } | { name: string }[] | null;
+    };
+    const ws = Array.isArray(row.workspaces) ? row.workspaces[0] : row.workspaces;
+    return { id: row.workspace_id, name: ws?.name ?? "Workspace", role: row.role };
+  });
+}
+
+/** Rename a workspace (owners only, per RLS). */
+export async function renameWorkspace(id: string, name: string): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.from("workspaces").update({ name }).eq("id", id);
+  if (error) console.warn("[supabase] renameWorkspace:", error.message);
+}
+
+/** Members of a workspace (email denormalized on the membership). */
+export async function fetchMembers(workspaceId: string): Promise<Member[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("memberships")
+    .select("user_id, email, role")
+    .eq("workspace_id", workspaceId);
+  if (error) {
+    console.warn("[supabase] fetchMembers:", error.message);
+    return [];
+  }
+  return (data as Member[]) ?? [];
+}
+
+export async function removeMember(workspaceId: string, userId: string): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase
+    .from("memberships")
+    .delete()
+    .eq("workspace_id", workspaceId)
+    .eq("user_id", userId);
+  if (error) console.warn("[supabase] removeMember:", error.message);
+}
+
+export interface Invitation {
+  id: string;
+  email: string;
+}
+
+export async function fetchInvitations(workspaceId: string): Promise<Invitation[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("invitations")
+    .select("id, email")
+    .eq("workspace_id", workspaceId);
+  if (error) {
+    console.warn("[supabase] fetchInvitations:", error.message);
+    return [];
+  }
+  return (data as Invitation[]) ?? [];
+}
+
+/** Invite someone by email. Returns an error message, or null on success. */
+export async function inviteMember(workspaceId: string, email: string): Promise<string | null> {
+  if (!supabase) return null;
+  const { error } = await supabase
+    .from("invitations")
+    .insert({ workspace_id: workspaceId, email: email.trim().toLowerCase() });
+  return error?.message ?? null;
+}
+
+export async function revokeInvitation(id: string): Promise<void> {
+  if (!supabase) return;
+  const { error } = await supabase.from("invitations").delete().eq("id", id);
+  if (error) console.warn("[supabase] revokeInvitation:", error.message);
 }

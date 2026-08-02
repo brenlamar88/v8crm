@@ -3,8 +3,10 @@
    otherwise it runs open (local demo). The shell wraps every route; the design
    system's living style guide lives at /styleguide.
    ========================================================================== */
+import type { ReactNode } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AccountsProvider } from "./store/accounts.tsx";
+import { WorkspaceProvider, useWorkspace } from "./store/workspace.tsx";
 import { AuthProvider, useAuth } from "./store/auth.tsx";
 import { ToastProvider } from "./components/toast.tsx";
 import { BrandMark } from "./components/Brand.tsx";
@@ -22,27 +24,49 @@ import { Settings } from "./screens/Settings.tsx";
 import { StyleGuide } from "./screens/StyleGuide.tsx";
 import { Placeholder } from "./screens/Placeholder.tsx";
 
+/* Holds the console until the workspace context has resolved (which team am I
+   in?), so AccountsProvider mounts with a workspace to scope to. When Supabase
+   is off, WorkspaceProvider reports `loading=false` immediately and this is a
+   pass-through. */
+function WorkspaceBoundary({ children }: { children: ReactNode }) {
+  const { enabled, loading } = useWorkspace();
+  if (enabled && loading) {
+    return (
+      <div className="grid min-h-screen place-items-center">
+        <div className="animate-fade-rise opacity-80">
+          <BrandMark size={44} />
+        </div>
+      </div>
+    );
+  }
+  return <>{children}</>;
+}
+
 function ConsoleRoutes() {
   return (
-    <AccountsProvider>
-      <Routes>
-        <Route element={<AppShell />}>
-          <Route index element={<Overview />} />
-          <Route path="accounts" element={<AccountsScreen />} />
-          <Route path="accounts/:code" element={<AccountDetail />} />
-          <Route path="pipeline" element={<Pipeline />} />
-          <Route path="tasks" element={<Tasks />} />
-          <Route path="activity" element={<Activity />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="settings" element={<Settings />} />
-          <Route path="styleguide" element={<StyleGuide />} />
-          <Route
-            path="*"
-            element={<Placeholder title="Not found" note="That route doesn't exist yet." />}
-          />
-        </Route>
-      </Routes>
-    </AccountsProvider>
+    <WorkspaceProvider>
+      <WorkspaceBoundary>
+        <AccountsProvider>
+          <Routes>
+            <Route element={<AppShell />}>
+              <Route index element={<Overview />} />
+              <Route path="accounts" element={<AccountsScreen />} />
+              <Route path="accounts/:code" element={<AccountDetail />} />
+              <Route path="pipeline" element={<Pipeline />} />
+              <Route path="tasks" element={<Tasks />} />
+              <Route path="activity" element={<Activity />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="styleguide" element={<StyleGuide />} />
+              <Route
+                path="*"
+                element={<Placeholder title="Not found" note="That route doesn't exist yet." />}
+              />
+            </Route>
+          </Routes>
+        </AccountsProvider>
+      </WorkspaceBoundary>
+    </WorkspaceProvider>
   );
 }
 
