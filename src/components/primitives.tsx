@@ -10,9 +10,9 @@ function cx(...parts: Array<string | false | null | undefined>): string {
 }
 
 /* --- Button -----------------------------------------------------------------
-   Three intents. Press gives a 1px optical sink; hover lifts color one step.
+   Four intents. Press gives a 1px optical sink; hover lifts color one step.
    Motion is fast + ease-out per the tokens — feedback, not decoration. */
-type ButtonVariant = "primary" | "ghost" | "subtle";
+type ButtonVariant = "primary" | "ghost" | "subtle" | "danger";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -38,6 +38,7 @@ export function Button({
     subtle:
       "bg-raised text-text hover:bg-overlay border border-[color:var(--v8-border)]",
     ghost: "bg-transparent text-text-secondary hover:text-text hover:bg-raised",
+    danger: "bg-down-soft text-down hover:bg-down hover:text-base border border-[color:var(--v8-border)]",
   };
 
   return (

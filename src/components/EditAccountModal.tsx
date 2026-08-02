@@ -22,10 +22,12 @@ export function EditAccountModal({
   open,
   onClose,
   account,
+  onRequestDelete,
 }: {
   open: boolean;
   onClose: () => void;
   account: Account;
+  onRequestDelete: () => void;
 }) {
   const { updateAccount } = useAccounts();
   const toast = useToast();
@@ -101,6 +103,17 @@ export function EditAccountModal({
         </Field>
         <button type="submit" className="hidden" aria-hidden />
       </form>
+
+      <div className="mt-5 flex items-center justify-between gap-4 border-t border-[color:var(--v8-border)] pt-4">
+        <span className="text-label text-text-muted">Remove this account and its activity.</span>
+        <button
+          type="button"
+          onClick={onRequestDelete}
+          className="text-body-sm font-semibold text-down hover:underline"
+        >
+          Delete account
+        </button>
+      </div>
     </Modal>
   );
 }

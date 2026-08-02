@@ -4,7 +4,7 @@
    side rail of account facts and contacts. Reached from any accounts table row.
    -------------------------------------------------------------------------- */
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { Topbar } from "../components/Topbar.tsx";
 import { Button, Badge } from "../components/primitives.tsx";
 import { Sparkline } from "../components/Sparkline.tsx";
@@ -54,12 +54,14 @@ const ACTIVITY_KINDS: TimelineKind[] = ["note", "call", "email", "ship", "risk"]
 
 export function AccountDetail() {
   const { code = "" } = useParams();
-  const { getAccount, logActivity } = useAccounts();
+  const { getAccount, logActivity, removeAccount } = useAccounts();
   const toast = useToast();
+  const navigate = useNavigate();
   const account: Account | undefined = getAccount(code);
 
   const [logOpen, setLogOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [kind, setKind] = useState<TimelineKind>("note");
   const [text, setText] = useState("");
 
@@ -77,6 +79,14 @@ export function AccountDetail() {
     setKind("note");
     setLogOpen(false);
     toast("Activity logged");
+  }
+
+  function confirmDelete() {
+    const name = account!.name;
+    setConfirmOpen(false);
+    removeAccount(code);
+    navigate("/accounts");
+    toast(`${name} deleted`, "warn");
   }
 
   const initials = account.name.split(" ").slice(0, 2).map((w) => w[0]).join("");
@@ -215,7 +225,33 @@ export function AccountDetail() {
         </div>
       </div>
 
-      <EditAccountModal open={editOpen} onClose={() => setEditOpen(false)} account={account} />
+      <EditAccountModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        account={account}
+        onRequestDelete={() => {
+          setEditOpen(false);
+          setConfirmOpen(true);
+        }}
+      />
+
+      <Modal
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        title="Delete account"
+        description={account.name}
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirmOpen(false)}>Cancel</Button>
+            <Button variant="danger" onClick={confirmDelete}>Delete account</Button>
+          </>
+        }
+      >
+        <p className="text-body text-text-secondary">
+          This permanently removes <span className="font-semibold text-text">{account.name}</span> and
+          its activity from your book. This can't be undone.
+        </p>
+      </Modal>
 
       <Modal
         open={logOpen}

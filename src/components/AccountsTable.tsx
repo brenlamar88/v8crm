@@ -61,6 +61,13 @@ export function AccountsTable({
             </tr>
           </thead>
           <tbody>
+            {accounts.length === 0 && (
+              <tr>
+                <td colSpan={5} className="px-5 py-12 text-center text-body text-text-muted">
+                  No accounts to show.
+                </td>
+              </tr>
+            )}
             {accounts.map((a) => (
               <tr
                 key={a.code}
