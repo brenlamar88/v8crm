@@ -54,7 +54,7 @@ const ACTIVITY_KINDS: TimelineKind[] = ["note", "call", "email", "ship", "risk"]
 
 export function AccountDetail() {
   const { code = "" } = useParams();
-  const { getAccount, logActivity, removeAccount, addContact, addTask, toggleTask, removeTask } = useAccounts();
+  const { getAccount, logActivity, removeAccount, addContact, removeContact, addTask, toggleTask, removeTask } = useAccounts();
   const toast = useToast();
   const navigate = useNavigate();
   const account: Account | undefined = getAccount(code);
@@ -329,16 +329,25 @@ export function AccountDetail() {
                   <p className="text-body-sm text-text-muted">No contacts yet.</p>
                 )}
                 {account.contacts.map((c) => (
-                  <div key={c.email} className="flex items-center gap-3">
+                  <div key={c.email} className="group flex items-center gap-3">
                     <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-raised text-label font-bold text-text-secondary">
                       {c.name.split(" ").map((w) => w[0]).join("")}
                     </span>
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="truncate text-body-sm font-semibold">{c.name}</div>
                       <div className="truncate text-label text-text-muted">
                         {c.role} · {c.email}
                       </div>
                     </div>
+                    <button
+                      onClick={() => removeContact(code, c.email)}
+                      aria-label={`Remove ${c.name}`}
+                      className="shrink-0 text-text-faint opacity-0 transition-opacity duration-fast hover:text-down group-hover:opacity-100"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" aria-hidden>
+                        <path d="M6 6l12 12M18 6L6 18" />
+                      </svg>
+                    </button>
                   </div>
                 ))}
               </div>

@@ -66,6 +66,7 @@ interface AccountsContextValue {
   updateAccount: (code: string, patch: Partial<Account>) => void;
   removeAccount: (code: string) => void;
   addContact: (code: string, contact: Contact) => void;
+  removeContact: (code: string, email: string) => void;
   addTask: (code: string, title: string, due: string) => void;
   toggleTask: (code: string, taskId: string) => void;
   removeTask: (code: string, taskId: string) => void;
@@ -214,6 +215,17 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
     [accounts],
   );
 
+  const removeContact = useCallback(
+    (code: string, email: string) => {
+      const current = accounts.find((a) => a.code === code);
+      if (!current) return;
+      const merged = { ...current, contacts: current.contacts.filter((c) => c.email !== email) };
+      setAccounts(accounts.map((a) => (a.code === code ? merged : a)));
+      trackSync(upsertAccount(merged));
+    },
+    [accounts],
+  );
+
   const writeTasks = useCallback(
     (code: string, tasks: Account["tasks"]) => {
       const current = accounts.find((a) => a.code === code);
@@ -275,6 +287,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
       updateAccount,
       removeAccount,
       addContact,
+      removeContact,
       addTask,
       toggleTask,
       removeTask,
@@ -283,7 +296,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
       openNewAccount: () => setNewAccountOpen(true),
       closeNewAccount: () => setNewAccountOpen(false),
     }),
-    [accounts, getAccount, addAccount, updateAccount, removeAccount, addContact, addTask, toggleTask, removeTask, logActivity, newAccountOpen],
+    [accounts, getAccount, addAccount, updateAccount, removeAccount, addContact, removeContact, addTask, toggleTask, removeTask, logActivity, newAccountOpen],
   );
 
   return <AccountsContext.Provider value={value}>{children}</AccountsContext.Provider>;
