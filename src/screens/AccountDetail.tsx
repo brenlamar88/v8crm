@@ -3,7 +3,7 @@
    + actions, a KPI strip, an engagement chart, the activity timeline, and a
    side rail of account facts and contacts. Reached from any accounts table row.
    -------------------------------------------------------------------------- */
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { Topbar } from "../components/Topbar.tsx";
 import { Button, Badge } from "../components/primitives.tsx";
@@ -18,8 +18,9 @@ import { useToast } from "../components/toast.tsx";
 import { Placeholder } from "./Placeholder.tsx";
 import { useAccounts } from "../store/accounts.tsx";
 import { useWorkspace } from "../store/workspace.tsx";
+import { useTime } from "../store/time.tsx";
 import { type Account, type EngagementStage, type TimelineKind, dueStatus } from "../data.ts";
-import { DELIVERY_METRICS, metricTone } from "../lib/metrics.ts";
+import { DELIVERY_METRICS, inPeriod, metricTone, summarize } from "../lib/metrics.ts";
 
 const stageTone: Record<EngagementStage, Parameters<typeof Badge>[0]["tone"]> = {
   Discovery: "neutral",
@@ -77,6 +78,19 @@ export function AccountDetail() {
   const [taskDue, setTaskDue] = useState("");
   const [taskAssignee, setTaskAssignee] = useState("");
   const { enabled: teamEnabled, members } = useWorkspace();
+  const { entries } = useTime();
+
+  // Effort on this engagement this month → the bridge to profitability.
+  const effort = useMemo(() => {
+    const mine = entries.filter((e) => e.accountCode === code && inPeriod(e.date, "month"));
+    const s = summarize(mine);
+    const mrr = account?.mrr ?? 0;
+    return {
+      total: s.total,
+      billable: s.billable,
+      effRate: s.total > 0 && mrr > 0 ? Math.round(mrr / s.total) : null,
+    };
+  }, [entries, code, account?.mrr]);
 
   if (!account) {
     return (
@@ -404,6 +418,32 @@ export function AccountDetail() {
                 <Fact label="Started" value={account.started} />
                 <Fact label="Renewal" value={account.renewal} />
               </div>
+            </div>
+
+            <div className="panel p-6 animate-fade-rise" style={{ animationDelay: "220ms" }}>
+              <div className="flex items-center justify-between">
+                <span className="eyebrow">Effort · this month</span>
+                <Link to="/time" className="text-label font-semibold text-accent-400 hover:text-accent-200 transition-colors duration-fast">
+                  Log time
+                </Link>
+              </div>
+              <div className="mt-4 grid grid-cols-3 gap-3">
+                <div>
+                  <div className="tabular text-h3 font-bold">{effort.total.toFixed(1)}</div>
+                  <div className="text-label text-text-muted">hours</div>
+                </div>
+                <div>
+                  <div className="tabular text-h3 font-bold">{effort.billable.toFixed(1)}</div>
+                  <div className="text-label text-text-muted">billable</div>
+                </div>
+                <div>
+                  <div className="tabular text-h3 font-bold">{effort.effRate != null ? `$${effort.effRate}` : "—"}</div>
+                  <div className="text-label text-text-muted">eff. rate</div>
+                </div>
+              </div>
+              {effort.effRate != null && (
+                <p className="mt-3 text-micro text-text-muted">MRR ÷ hours logged — the real rate you're realizing.</p>
+              )}
             </div>
 
             <div className="panel p-6 animate-fade-rise" style={{ animationDelay: "240ms" }}>
