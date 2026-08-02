@@ -200,6 +200,44 @@ create policy "ws accounts delete" on public.accounts for delete to authenticate
 -- changes to rows its SELECT policy permits.
 alter publication supabase_realtime add table public.accounts;
 
+-- ── Overdue-task digest (email reminders) ────────────────────────────────────
+-- Returns open, assigned, past-due tasks across every workspace, one row per
+-- (assignee, task). Read by the `overdue-reminders` Edge Function with the
+-- service role to email each assignee their own list. SECURITY DEFINER so it
+-- can scan across workspaces; execute is locked to the service role. See
+-- supabase/reminders.md for the activation runbook.
+create or replace function public.overdue_task_digest()
+returns table (
+  assignee     text,
+  workspace_id uuid,
+  code         text,
+  account      text,
+  title        text,
+  due_date     date
+)
+language sql
+security definer
+set search_path = public
+as $$
+  select
+    lower(t->>'assignee')  as assignee,
+    a.workspace_id,
+    a.code,
+    a.name                 as account,
+    t->>'title'            as title,
+    (t->>'dueDate')::date  as due_date
+  from public.accounts a,
+       lateral jsonb_array_elements(a.tasks) t
+  where coalesce((t->>'done')::boolean, false) = false
+    and nullif(t->>'assignee', '') is not null
+    and nullif(t->>'dueDate', '') is not null
+    and (t->>'dueDate')::date < current_date
+  order by assignee, due_date;
+$$;
+
+revoke all on function public.overdue_task_digest() from public, anon, authenticated;
+grant execute on function public.overdue_task_digest() to service_role;
+
 -- ── Profiles ─────────────────────────────────────────────────────────────────
 -- One row per user for display name / role / workspace label, editable in
 -- Settings. (This `workspace` is just a free-text label on the profile; team
