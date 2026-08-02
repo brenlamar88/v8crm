@@ -9,6 +9,7 @@ import { Overview } from "./screens/Overview.tsx";
 import { AccountsScreen } from "./screens/AccountsScreen.tsx";
 import { AccountDetail } from "./screens/AccountDetail.tsx";
 import { Pipeline } from "./screens/Pipeline.tsx";
+import { Activity } from "./screens/Activity.tsx";
 import { StyleGuide } from "./screens/StyleGuide.tsx";
 import { Placeholder } from "./screens/Placeholder.tsx";
 
@@ -22,10 +23,7 @@ export function App() {
           <Route path="accounts" element={<AccountsScreen />} />
           <Route path="accounts/:code" element={<AccountDetail />} />
           <Route path="pipeline" element={<Pipeline />} />
-          <Route
-            path="activity"
-            element={<Placeholder title="Activity" note="A unified timeline of touches across every account." />}
-          />
+          <Route path="activity" element={<Activity />} />
           <Route
             path="reports"
             element={<Placeholder title="Reports" note="Saved views and exports over your book of engagements." />}

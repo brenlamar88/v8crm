@@ -44,6 +44,19 @@ export function accountByCode(code: string): Account | undefined {
   return accounts.find((a) => a.code === code);
 }
 
+/** Approximate minutes-ago from a relative label ("just now", "2d ago",
+    "1w ago", "3h ago"). Used only to order the cross-account activity feed —
+    lower is more recent. Unknown labels sort oldest. */
+export function agoMinutes(when: string): number {
+  const w = when.trim().toLowerCase();
+  if (w === "just now") return 0;
+  const m = w.match(/^(\d+)\s*([mhdw])\b/);
+  if (!m) return Number.MAX_SAFE_INTEGER;
+  const n = Number(m[1]);
+  const unit = { m: 1, h: 60, d: 1440, w: 10080 }[m[2]] ?? 1;
+  return n * unit;
+}
+
 /** Stages in board order, with the tint used across the console. */
 export const pipelineStages: { stage: EngagementStage; tint: string }[] = [
   { stage: "Discovery", tint: "var(--v8-text-muted)" },
