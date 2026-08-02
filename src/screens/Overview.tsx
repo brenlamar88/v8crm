@@ -2,7 +2,7 @@
    Overview — the console home. A KPI band, the revenue panel, and a compact
    view of the accounts that need attention. Assembled entirely from primitives.
    -------------------------------------------------------------------------- */
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Topbar } from "../components/Topbar.tsx";
 import { SegmentedControl } from "../components/primitives.tsx";
@@ -10,11 +10,31 @@ import { StatCard, StatCardRow } from "../components/StatCard.tsx";
 import { Sparkline } from "../components/Sparkline.tsx";
 import { AccountsTable } from "../components/AccountsTable.tsx";
 import { useAccounts } from "../store/accounts.tsx";
+import { useTime } from "../store/time.tsx";
+import { useWorkspace } from "../store/workspace.tsx";
 import { revenueSeries, dueLabel, dueStatus, dueSortKey } from "../data.ts";
+import { capacityHours, inPeriod, pct, realization, summarize, utilization } from "../lib/metrics.ts";
 
 export function Overview() {
   const { accounts, openNewAccount, toggleTask } = useAccounts();
+  const { entries } = useTime();
+  const { enabled: teamEnabled, members } = useWorkspace();
   const [range, setRange] = useState("1M");
+
+  // At-a-glance operating health (this month).
+  const op = useMemo(() => {
+    const s = summarize(entries.filter((e) => inPeriod(e.date, "month")));
+    const people = teamEnabled ? Math.max(1, members.length) : 1;
+    const cap = capacityHours(40, people, "month");
+    const totalMrr = accounts.reduce((sum, a) => sum + a.mrr, 0);
+    const retainerMrr = accounts.filter((a) => a.stage === "Retainer").reduce((sum, a) => sum + a.mrr, 0);
+    return {
+      util: utilization(s.billable, cap),
+      real: realization(s.billed, s.billable),
+      retainerShare: totalMrr > 0 ? retainerMrr / totalMrr : 0,
+      hasTime: s.billable > 0,
+    };
+  }, [entries, accounts, teamEnabled, members]);
   const attention = accounts.filter((a) => a.health < 80).slice(0, 4);
   const openTasks = accounts
     .flatMap((a) => a.tasks.filter((t) => !t.done).map((t) => ({ ...t, account: a.name, code: a.code })))
@@ -46,6 +66,29 @@ export function Overview() {
           <StatCard label="Win Rate" value="61" unit="%" trend={-1.42} range={range} series={[18, 17, 17, 15, 16, 14, 13, 13]} delay={120} />
           <StatCard label="Active Engagements" value="9" trend={2.4} range={range} series={[5, 5, 6, 6, 7, 7, 8, 9]} delay={180} />
         </StatCardRow>
+
+        {/* Operating health — the agency levers, at a glance. */}
+        <div className="mt-4 panel p-5 animate-fade-rise" style={{ animationDelay: "200ms" }}>
+          <div className="flex items-center justify-between">
+            <span className="eyebrow">Operating · this month</span>
+            <Link to="/time" className="text-label font-semibold text-accent-400 hover:text-accent-200 transition-colors duration-fast">
+              Log time
+            </Link>
+          </div>
+          <div className="mt-4 grid gap-6 sm:grid-cols-3">
+            {[
+              { label: "Utilization", value: op.hasTime ? pct(op.util) : "—", tone: !op.hasTime ? "" : op.util >= 0.7 ? "text-up" : op.util >= 0.55 ? "text-warn" : "text-down", sub: "billable ÷ capacity" },
+              { label: "Realization", value: op.hasTime ? pct(op.real) : "—", tone: !op.hasTime ? "" : op.real >= 0.9 ? "text-up" : op.real >= 0.75 ? "text-warn" : "text-down", sub: "billed ÷ worked" },
+              { label: "Retainer share", value: pct(op.retainerShare), tone: op.retainerShare >= 0.6 ? "text-up" : op.retainerShare >= 0.4 ? "text-warn" : "text-down", sub: "recurring ÷ total MRR" },
+            ].map((m) => (
+              <div key={m.label}>
+                <div className="text-label text-text-muted">{m.label}</div>
+                <div className={["tabular mt-1 text-h1 font-bold leading-none", m.tone].join(" ")}>{m.value}</div>
+                <div className="mt-1 text-micro text-text-muted">{m.sub}</div>
+              </div>
+            ))}
+          </div>
+        </div>
 
         <div className="mt-4 grid gap-4 xl:grid-cols-3">
           {/* Revenue panel spans two columns on wide screens. */}
